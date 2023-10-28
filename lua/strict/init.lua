@@ -1,1 +1,0 @@
-require 'strict/disallow_globals'
