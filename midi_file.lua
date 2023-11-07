@@ -1,7 +1,4 @@
--- require 'strict'
-
-require 'llx/core/class'
-require 'llx/core/list'
+require 'llx'
 local midi_io = require 'midi/io'
 
 -- A re representing a Midi file. A midi file consists of a format, the

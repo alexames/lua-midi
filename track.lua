@@ -1,5 +1,4 @@
-require 'llx/core/class'
-require 'llx/core/list'
+require 'llx'
 local midi_io = require 'midi/io'
 local events = require 'midi/events'
 
