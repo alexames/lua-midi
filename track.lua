@@ -7,7 +7,7 @@ local Track = class 'Track' {
     self.events = List{}
   end;
 
-  getTrackByteLength = function(self)
+  _getTrackByteLength = function(self)
     local length = 0
     local previousCommandByte = 0
     for event in self.events:ivalues() do
@@ -50,7 +50,7 @@ local Track = class 'Track' {
 
   write = function(self, file)
     file:write('MTrk')
-    midi_io.writeUInt32be(file, self:getTrackByteLength())
+    midi_io.writeUInt32be(file, self:_getTrackByteLength())
     local context = {previousCommandByte = 0}
     for event in self.events:ivalues() do
       event:write(file, context)
