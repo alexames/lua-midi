@@ -1,4 +1,4 @@
-local instruments = {
+local instrument = {
   -- Piano
   acoustic_grand = 0,
   bright_acoustic = 1,
