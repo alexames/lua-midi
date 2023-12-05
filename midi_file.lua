@@ -5,8 +5,8 @@ local midi_io = require 'midi/io'
 -- number of ticks per beat, and a list of tracks filled with midi events.
 local MidiFile = class 'MidiFile' {
   __init = function(self)
-    self.format = 0
-    self.ticks = 0
+    self.format = 1
+    self.ticks = 92
     self.tracks = List{}
   end;
 
@@ -19,8 +19,8 @@ local MidiFile = class 'MidiFile' {
     midi_io.writeUInt16be(file, self.format)
     midi_io.writeUInt16be(file, #self.tracks)
     midi_io.writeUInt16be(file, self.ticks)
-    for track in self.tracks:ivalues() do
-      track:write(file)
+    for i, track in ipairs(self.tracks) do
+      track:write(file, self.ticks)
     end
   end
 }

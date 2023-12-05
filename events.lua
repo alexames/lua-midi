@@ -12,18 +12,18 @@ local Event = class 'Event' {
   end;
 
   writeEventTime = function(self, file, timeDelta)
-    if self.timeDelta > (0x7F * 0x7F * 0x7F) then
-      midi_io.writeUInt8be(file, (self.timeDelta >> 21) | 0x80)
-    elseif self.timeDelta > (0x7F * 0x7F) then
-      midi_io.writeUInt8be(file, (self.timeDelta >> 14) | 0x80)
-    elseif self.timeDelta > (0x7F) then
-      midi_io.writeUInt8be(file, (self.timeDelta >> 7) | 0x80)
+    if timeDelta > (0x7F * 0x7F * 0x7F) then
+      midi_io.writeUInt8be(file, (timeDelta >> 21) | 0x80)
+    elseif timeDelta > (0x7F * 0x7F) then
+      midi_io.writeUInt8be(file, (timeDelta >> 14) | 0x80)
+    elseif timeDelta > (0x7F) then
+      midi_io.writeUInt8be(file, (timeDelta >> 7) | 0x80)
     end
     midi_io.writeUInt8be(file, timeDelta & 0x7F)
   end;
 
-  write = function(self, file, context)
-    self:writeEventTime(file, self.timeDelta)
+  write = function(self, file, context, ticks)
+    self:writeEventTime(file, self.timeDelta * ticks)
     local commandByte = self.command | self.channel
     if commandByte ~= context.previousCommandByte
        or self.command == self.class.Meta then
@@ -40,8 +40,8 @@ local NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
     self.velocity = velocity
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.noteNumber)
     midi_io.writeUInt8be(file, self.velocity)
   end;
@@ -56,8 +56,8 @@ local NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
     self.velocity = velocity
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.noteNumber)
     midi_io.writeUInt8be(file, self.velocity)
   end;
@@ -72,8 +72,8 @@ local VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
     self.velocity = velocity
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, event.noteNumber)
     midi_io.writeUInt8be(file, event.velocity)
   end;
@@ -88,8 +88,8 @@ local ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
     self.velocity = velocity
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, event.controllerNumber)
     midi_io.writeUInt8be(file, event.velocity)
   end;
@@ -103,8 +103,8 @@ local ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
     self.newProgramNumber = newProgramNumber
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, event.newProgramNumber)
   end;
 
@@ -117,8 +117,8 @@ local ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(
     self.channelNumber = channelNumber
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, event.channelNumber)
   end;
 
@@ -132,8 +132,8 @@ local PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
     self.top = top
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, event.bottom)
     midi_io.writeUInt8be(file, event.top)
   end;
@@ -146,8 +146,8 @@ local MetaEvent = class 'MetaEvent' : extends(Event) {
     self.Event.__init(self, timeDelta, channel)
   end;
 
-  write = function(self, file, context)
-    self.Event.write(self, file, context)
+  write = function(self, file, context, ticks)
+    self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, event.command)
     midi_io.writeUInt8be(file, event.length)
     for i=1, event.length do
