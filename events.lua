@@ -26,7 +26,7 @@ local Event = class 'Event' {
     self:writeEventTime(file, self.timeDelta)
     local commandByte = self.command | self.channel
     if commandByte ~= context.previousCommandByte
-       or self.command == Event.Meta then
+       or self.command == self.class.Meta then
       midi_io.writeUInt8be(file, commandByte)
       context.previousCommandByte = commandByte
     end

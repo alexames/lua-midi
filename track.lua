@@ -24,7 +24,7 @@ local Track = class 'Track' {
 
       -- Command
       local commandByte = event.command | event.channel
-      if commandByte ~= previousCommandByte or event.command == MetaEvent.command then
+      if commandByte ~= previousCommandByte or event.command == events.MetaEvent.command then
         length = length + 1
         previousCommandByte = commandByte
       end
