@@ -9,7 +9,7 @@ local Event = class 'Event' {
   __init = function(self, time_delta, channel)
     self.time_delta = time_delta
     self.channel = channel
-  end;
+  end,
 
   _write_event_time = function(self, file, time_delta, ticks)
     time_delta = math.floor(time_delta * ticks)
@@ -21,7 +21,7 @@ local Event = class 'Event' {
       midi_io.writeUInt8be(file, (time_delta >> 7) | 0x80)
     end
     midi_io.writeUInt8be(file, time_delta & 0x7F)
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self:_write_event_time(file, self.time_delta, ticks)
@@ -31,7 +31,7 @@ local Event = class 'Event' {
       midi_io.writeUInt8be(file, command_byte)
       context.previous_command_byte = command_byte
     end
-  end;
+  end,
 }
 
 local NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
@@ -39,15 +39,15 @@ local NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
     self.velocity = velocity
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.note_number)
     midi_io.writeUInt8be(file, self.velocity)
-  end;
+  end,
 
-  command = 0x80;
+  command = 0x80,
 }
 
 local NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
@@ -55,15 +55,15 @@ local NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
     self.velocity = velocity
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.note_number)
     midi_io.writeUInt8be(file, self.velocity)
-  end;
+  end,
 
-  command = 0x90;
+  command = 0x90,
 }
 
 local VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
@@ -71,15 +71,15 @@ local VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
     self.velocity = velocity
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.note_number)
     midi_io.writeUInt8be(file, self.velocity)
-  end;
+  end,
 
-  command = 0xA0;
+  command = 0xA0,
 }
 
 local ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
@@ -87,43 +87,43 @@ local ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
     self.Event.__init(self, time_delta, channel)
     self.controller_number = controller_number
     self.velocity = velocity
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.controller_number)
     midi_io.writeUInt8be(file, self.velocity)
-  end;
+  end,
 
-  command = 0xB0;
+  command = 0xB0,
 }
 
 local ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
   __init = function(self, time_delta, channel, new_program_number)
     self.Event.__init(self, time_delta, channel)
     self.new_program_number = new_program_number
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.new_program_number)
-  end;
+  end,
 
-  command = 0xC0;
+  command = 0xC0,
 }
 
 local ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event) {
   __init = function(self, time_delta, channel, channel_number)
     self.Event.__init(self, time_delta, channel)
     self.channel_number = channel_number
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.channel_number)
-  end;
+  end,
 
-  command = 0xD0;
+  command = 0xD0,
 }
 
 local PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
@@ -131,89 +131,89 @@ local PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
     self.Event.__init(self, time_delta, channel)
     self.bottom = bottom
     self.top = top
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.bottom)
     midi_io.writeUInt8be(file, self.top)
-  end;
+  end,
 
-  command = 0xE0;
+  command = 0xE0,
 }
 
 local MetaEvent = class 'MetaEvent' : extends(Event) {
   __init = function(self, time_delta, channel)
     self.Event.__init(self, time_delta, channel)
-  end;
+  end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.meta_command)
     midi_io.writeUInt8be(file, self.length)
-  end;
+  end,
 
-  command = 0xFF;
+  command = 0xFF,
 }
 
 local SetSequenceNumberEvent = class 'SetSequenceNumberEvent' : extends(MetaEvent) {
-  meta_command = 0x00;
+  meta_command = 0x00,
 }
 
 local TextEvent = class 'TextEvent' : extends(MetaEvent) {
-  meta_command = 0x01;
+  meta_command = 0x01,
 }
 
 local CopywriteEvent = class 'CopywriteEvent' : extends(MetaEvent) {
-  meta_command = 0x02;
+  meta_command = 0x02,
 }
 
 local SequnceNameEvent = class 'SequnceNameEvent' : extends(MetaEvent) {
-  meta_command = 0x03;
+  meta_command = 0x03,
 }
 
 local TrackInstrumentNameEvent = class 'TrackInstrumentNameEvent' : extends(MetaEvent) {
-  meta_command = 0x04;
+  meta_command = 0x04,
 }
 
 local LyricEvent = class 'LyricEvent' : extends(MetaEvent) {
-  meta_command = 0x05;
+  meta_command = 0x05,
 }
 
 local MarkerEvent = class 'MarkerEvent' : extends(MetaEvent) {
-  meta_command = 0x06;
+  meta_command = 0x06,
 }
 
 local CueEvent = class 'CueEvent' : extends(MetaEvent) {
-  meta_command = 0x07;
+  meta_command = 0x07,
 }
 
 local PrefixAssignmentEvent = class 'PrefixAssignmentEvent' : extends(MetaEvent) {
-  meta_command = 0x20;
+  meta_command = 0x20,
 }
 
 local EndOfTrackEvent = class 'EndOfTrackEvent' : extends(MetaEvent) {
-  meta_command = 0x2F;
+  meta_command = 0x2F,
 }
 
 local SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
-  meta_command = 0x51;
+  meta_command = 0x51,
 }
 
 local SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
-  meta_command = 0x54;
+  meta_command = 0x54,
 }
 
 local TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
-  meta_command = 0x58;
+  meta_command = 0x58,
 }
 
 local KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
-  meta_command = 0x59;
+  meta_command = 0x59,
 }
 
 local SequencerSpecificEvent = class 'SequencerSpecificEvent' : extends(MetaEvent) {
-  meta_command = 0x7F;
+  meta_command = 0x7F,
 }
 
 return {

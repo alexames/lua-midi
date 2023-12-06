@@ -8,7 +8,7 @@ local MidiFile = class 'MidiFile' {
     self.format = 1
     self.ticks = 92
     self.tracks = List{}
-  end;
+  end,
 
   write = function(self, file)
     if type(file) == "string" then
@@ -22,7 +22,7 @@ local MidiFile = class 'MidiFile' {
     for i, track in ipairs(self.tracks) do
       track:write(file, self.ticks)
     end
-  end
+  end,
 }
 
 return MidiFile

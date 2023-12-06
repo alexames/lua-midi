@@ -5,7 +5,7 @@ local events = require 'midi/event'
 local Track = class 'Track' {
   __init = function(self)
     self.events = List{}
-  end;
+  end,
 
   _get_track_byte_length = function(self, ticks)
     local length = 0
@@ -22,6 +22,7 @@ local Track = class 'Track' {
       else
         length = length + 1
       end
+
       -- Command
       local commandByte = event.command | event.channel
       if commandByte ~= previous_command_byte or event.command == events.MetaEvent.command then
@@ -46,7 +47,7 @@ local Track = class 'Track' {
       end
     end
     return length
-  end;
+  end,
 
   write = function(self, file, ticks)
     file:write('MTrk')
@@ -55,7 +56,7 @@ local Track = class 'Track' {
     for i, event in ipairs(self.events) do
       event:write(file, context, ticks)
     end
-  end;
+  end,
 }
 
 return Track
