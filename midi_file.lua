@@ -25,4 +25,9 @@ local MidiFile = class 'MidiFile' {
   end,
 }
 
+function tomidifile(value)
+  local __tomidifile = getmetafield(value, '__tomidifile')
+  return __tomidifile and __tomidifile(value) or nil
+end
+
 return MidiFile
