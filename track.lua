@@ -10,7 +10,7 @@ local Track = class 'Track' {
   _get_track_byte_length = function(self, ticks)
     local length = 0
     local previous_command_byte = 0
-    for event in self.events:ivalues() do
+    for i, event in self.events do
       -- Time delta
       local time_delta = event.time_delta * ticks
       if time_delta > (0x7f * 0x7f * 0x7f) then
