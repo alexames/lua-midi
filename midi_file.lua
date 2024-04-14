@@ -1,13 +1,19 @@
-require 'llx'
+-- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
+
+local llx = require 'llx'
 local midi_io = require 'midi/io'
+
+local _ENV, _M = llx.environment.create_module_environment()
+
+local class = llx.class
 
 -- A re representing a Midi file. A midi file consists of a format, the
 -- number of ticks per beat, and a list of tracks filled with midi events.
-local MidiFile = class 'MidiFile' {
+MidiFile = class 'MidiFile' {
   __init = function(self)
     self.format = 1
     self.ticks = 92
-    self.tracks = List{}
+    self.tracks = llx.List{}
   end,
 
   write = function(self, file)
@@ -26,8 +32,8 @@ local MidiFile = class 'MidiFile' {
 }
 
 function tomidifile(value)
-  local __tomidifile = getmetafield(value, '__tomidifile')
+  local __tomidifile = llx.getmetafield(value, '__tomidifile')
   return __tomidifile and __tomidifile(value) or nil
 end
 
-return MidiFile
+return _M

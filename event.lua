@@ -1,11 +1,17 @@
-require 'llx'
+-- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
+
+local llx = require 'llx'
 local midi_io = require 'midi/io'
+
+local _ENV, _M = llx.environment.create_module_environment()
+
+local class = llx.class
 
 -- A midi event represents one of many commands a midi file can run. The Event
 -- re is a union of all possible events.
 -- Only regular events (i.e. not Meta events) are significant to the midi file
 -- playback
-local Event = class 'Event' {
+Event = class 'Event' {
   __init = function(self, time_delta, channel)
     self.time_delta = time_delta
     self.channel = channel
@@ -34,7 +40,7 @@ local Event = class 'Event' {
   end,
 }
 
-local NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
+NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
   __init = function(self, time_delta, channel, note_number, velocity)
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
@@ -50,7 +56,7 @@ local NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
   command = 0x80,
 }
 
-local NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
+NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
   __init = function(self, time_delta, channel, note_number, velocity)
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
@@ -66,7 +72,7 @@ local NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
   command = 0x90,
 }
 
-local VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
+VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
   __init = function(self, time_delta, channel, note_number, velocity)
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
@@ -82,7 +88,7 @@ local VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
   command = 0xA0,
 }
 
-local ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
+ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
   __init = function(self, time_delta, channel, controller_number, velocity)
     self.Event.__init(self, time_delta, channel)
     self.controller_number = controller_number
@@ -98,7 +104,7 @@ local ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
   command = 0xB0,
 }
 
-local ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
+ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
   __init = function(self, time_delta, channel, new_program_number)
     self.Event.__init(self, time_delta, channel)
     self.new_program_number = new_program_number
@@ -112,7 +118,7 @@ local ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
   command = 0xC0,
 }
 
-local ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event) {
+ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event) {
   __init = function(self, time_delta, channel, channel_number)
     self.Event.__init(self, time_delta, channel)
     self.channel_number = channel_number
@@ -126,7 +132,7 @@ local ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(
   command = 0xD0,
 }
 
-local PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
+PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
   __init = function(self, time_delta, channel, bottom, top)
     self.Event.__init(self, time_delta, channel)
     self.bottom = bottom
@@ -142,7 +148,7 @@ local PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
   command = 0xE0,
 }
 
-local MetaEvent = class 'MetaEvent' : extends(Event) {
+MetaEvent = class 'MetaEvent' : extends(Event) {
   __init = function(self, time_delta, channel)
     self.Event.__init(self, time_delta, channel)
   end,
@@ -156,89 +162,64 @@ local MetaEvent = class 'MetaEvent' : extends(Event) {
   command = 0xFF,
 }
 
-local SetSequenceNumberEvent = class 'SetSequenceNumberEvent' : extends(MetaEvent) {
+SetSequenceNumberEvent = class 'SetSequenceNumberEvent' : extends(MetaEvent) {
   meta_command = 0x00,
 }
 
-local TextEvent = class 'TextEvent' : extends(MetaEvent) {
+TextEvent = class 'TextEvent' : extends(MetaEvent) {
   meta_command = 0x01,
 }
 
-local CopywriteEvent = class 'CopywriteEvent' : extends(MetaEvent) {
+CopywriteEvent = class 'CopywriteEvent' : extends(MetaEvent) {
   meta_command = 0x02,
 }
 
-local SequnceNameEvent = class 'SequnceNameEvent' : extends(MetaEvent) {
+SequnceNameEvent = class 'SequnceNameEvent' : extends(MetaEvent) {
   meta_command = 0x03,
 }
 
-local TrackInstrumentNameEvent = class 'TrackInstrumentNameEvent' : extends(MetaEvent) {
+TrackInstrumentNameEvent = class 'TrackInstrumentNameEvent' : extends(MetaEvent) {
   meta_command = 0x04,
 }
 
-local LyricEvent = class 'LyricEvent' : extends(MetaEvent) {
+LyricEvent = class 'LyricEvent' : extends(MetaEvent) {
   meta_command = 0x05,
 }
 
-local MarkerEvent = class 'MarkerEvent' : extends(MetaEvent) {
+MarkerEvent = class 'MarkerEvent' : extends(MetaEvent) {
   meta_command = 0x06,
 }
 
-local CueEvent = class 'CueEvent' : extends(MetaEvent) {
+CueEvent = class 'CueEvent' : extends(MetaEvent) {
   meta_command = 0x07,
 }
 
-local PrefixAssignmentEvent = class 'PrefixAssignmentEvent' : extends(MetaEvent) {
+PrefixAssignmentEvent = class 'PrefixAssignmentEvent' : extends(MetaEvent) {
   meta_command = 0x20,
 }
 
-local EndOfTrackEvent = class 'EndOfTrackEvent' : extends(MetaEvent) {
+EndOfTrackEvent = class 'EndOfTrackEvent' : extends(MetaEvent) {
   meta_command = 0x2F,
 }
 
-local SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
+SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   meta_command = 0x51,
 }
 
-local SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
+SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   meta_command = 0x54,
 }
 
-local TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
+TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   meta_command = 0x58,
 }
 
-local KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
+KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
   meta_command = 0x59,
 }
 
-local SequencerSpecificEvent = class 'SequencerSpecificEvent' : extends(MetaEvent) {
+SequencerSpecificEvent = class 'SequencerSpecificEvent' : extends(MetaEvent) {
   meta_command = 0x7F,
 }
 
-return {
-  Event=Event,
-  NoteEndEvent=NoteEndEvent,
-  NoteBeginEvent=NoteBeginEvent,
-  VelocityChangeEvent=VelocityChangeEvent,
-  ControllerChangeEvent=ControllerChangeEvent,
-  ProgramChangeEvent=ProgramChangeEvent,
-  ChannelPressureChangeEvent=ChannelPressureChangeEvent,
-  PitchWheelChangeEvent=PitchWheelChangeEvent,
-  MetaEvent=MetaEvent,
-  SetSequenceNumberEvent=SetSequenceNumberEvent,
-  TextEvent=TextEvent,
-  CopywriteEvent=CopywriteEvent,
-  SequnceNameEvent=SequnceNameEvent,
-  TrackInstrumentNameEvent=TrackInstrumentNameEvent,
-  LyricEvent=LyricEvent,
-  MarkerEvent=MarkerEvent,
-  CueEvent=CueEvent,
-  PrefixAssignmentEvent=PrefixAssignmentEvent,
-  EndOfTrackEvent=EndOfTrackEvent,
-  SetTempoEvent=SetTempoEvent,
-  SMPTEOffsetEvent=SMPTEOffsetEvent,
-  TimeSignatureEvent=TimeSignatureEvent,
-  KeySignatureEvent=KeySignatureEvent,
-  SequencerSpecificEvent=SequencerSpecificEvent,
-}
+return _M

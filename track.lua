@@ -1,10 +1,16 @@
-require 'llx'
+-- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
+
+local llx = require 'llx'
 local midi_io = require 'midi/io'
 local events = require 'midi/event'
 
-local Track = class 'Track' {
+local _ENV, _M = llx.environment.create_module_environment()
+
+local class = llx.class
+
+Track = class 'Track' {
   __init = function(self)
-    self.events = List{}
+    self.events = llx.List{}
   end,
 
   _get_track_byte_length = function(self, ticks)
@@ -59,4 +65,4 @@ local Track = class 'Track' {
   end,
 }
 
-return Track
+return _M
