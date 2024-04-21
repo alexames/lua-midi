@@ -7,7 +7,7 @@ local _ENV, _M = llx.environment.create_module_environment()
 
 local class = llx.class
 
--- A re representing a Midi file. A midi file consists of a format, the
+-- A class representing a Midi file. A midi file consists of a format, the
 -- number of ticks per beat, and a list of tracks filled with midi events.
 MidiFile = class 'MidiFile' {
   __init = function(self)
@@ -18,7 +18,7 @@ MidiFile = class 'MidiFile' {
 
   write = function(self, file)
     if type(file) == "string" then
-      file = io.open(file, "w")
+      file = io.open(file, "wb")
     end
     file:write('MThd')
     midi_io.writeUInt32be(file, 0x0006)
@@ -28,6 +28,15 @@ MidiFile = class 'MidiFile' {
     for i, track in ipairs(self.tracks) do
       track:write(file, self.ticks)
     end
+    file:close()
+  end,
+
+  read = function(self, file)
+    if type(file) == "string" then
+      file = io.open(file, "rb")
+    end
+    local contents = file:read('*a')
+    file:close()
   end,
 }
 
