@@ -1,8 +1,8 @@
 -- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
 
 local llx = require 'llx'
-local midi_io = require 'midi/io'
-local events = require 'midi/event'
+local midi_io = require 'midi.io'
+local events = require 'midi.event'
 
 local _ENV, _M = llx.environment.create_module_environment()
 
