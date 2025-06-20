@@ -40,7 +40,7 @@ MidiFile = class 'MidiFile' {
     local tracks_count = midi_io.readUInt16be(file)
     midi_file.ticks = midi_io.readUInt16be(file)
     for i=1, tracks_count do
-      table.insert(midi_file.tracks, midi_track.Track.read(file, midi_file.ticks))
+      table.insert(midi_file.tracks, midi_track.Track.read(file))
     end
     return midi_file
   end,
@@ -63,7 +63,7 @@ MidiFile = class 'MidiFile' {
     midi_io.writeUInt16be(file, #self.tracks)
     midi_io.writeUInt16be(file, self.ticks)
     for _, track in ipairs(self.tracks) do
-      track:write(file, self.ticks)
+      track:write(file)
     end
   end,
 
@@ -79,10 +79,23 @@ MidiFile = class 'MidiFile' {
 
   --- Returns a human-readable representation of the MIDI file
   __tostring = function(self)
+    local tracks_strings = {}
+    for i, track in ipairs(self.tracks) do
+      tracks_strings[i] = tostring(track)
+    end
+    return string.format(
+      'MidiFile{format=%d, ticks=%d, tracks={%s}}',
+      self.format, self.ticks, table.concat(tracks_strings, ', '))
   end,
 
   --- Returns the binary contents of the MIDI file as a Lua string
   __tobytes = function(self)
+    local buffer = {}
+    local file = {
+      write = function(_, s) table.insert(buffer, s) end
+    }
+    self:_write_file(file)
+    return table.concat(buffer)
   end,
 }
 

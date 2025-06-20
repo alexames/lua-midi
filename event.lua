@@ -12,17 +12,16 @@ TimedEvent = class 'TimedEvent' {
     self.time_delta = time_delta
   end,
 
-  _read_event_time = function(file, ticks)
+  _read_event_time = function(file)
     local time_delta = 0
     repeat
       local byte = midi_io.readUInt8be(file)
       time_delta = (time_delta << 7) + (byte & 0x7F)
     until byte & 0x80 == 0
-    return time_delta / ticks
+    return time_delta
   end,
 
-  _write_event_time = function(file, time_delta, ticks)
-    time_delta = math.floor(time_delta * ticks)
+  _write_event_time = function(file, time_delta)
     if time_delta > (0x7F * 0x7F * 0x7F) then
       midi_io.writeUInt8be(file, (time_delta >> 21) | 0x80)
     elseif time_delta > (0x7F * 0x7F) then
@@ -33,11 +32,12 @@ TimedEvent = class 'TimedEvent' {
     midi_io.writeUInt8be(file, time_delta & 0x7F)
   end,
 
-  read = function(file, ticks)
+  read = function(file)
+    
   end,
 
-  write = function(self, file, ticks)
-    TimedEvent._write_event_time(file, self.time_delta, ticks)
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
   end,
 }
 
@@ -50,8 +50,8 @@ Event = class 'Event' {
     self.channel = channel
   end,
 
-  read = function(file, context, ticks)
-    local time_delta = TimedEvent._read_event_time(file, ticks)
+  read = function(file, context)
+    local time_delta = TimedEvent._read_event_time(file)
     local command_byte = midi_io.readUInt8be(file)
     local event_byte = nil
     if command_byte < 0x80 then
@@ -71,12 +71,12 @@ Event = class 'Event' {
       end
       return EventType(time_delta, channel, table.unpack(args))
     else
-      return EventType.read(file, time_delta, channel, context, ticks)
+      return EventType.read(file, time_delta, channel, context)
     end
   end,
 
-  write = function(self, file, context, ticks)
-    TimedEvent._write_event_time(file, self.time_delta, ticks)
+  write = function(self, file, context)
+    TimedEvent._write_event_time(file, self.time_delta)
     local command_byte = self.command | self.channel
     if command_byte ~= context.previous_command_byte
        or self.command == 0xF0 then
@@ -90,6 +90,21 @@ Event = class 'Event' {
         midi_io.writeUInt8be(file, byte)
       end
     end
+  end,
+
+  __tostring = function(self)
+    local argument_strings = {
+      self.time_delta,
+      self.channel
+    }
+    if self.schema then
+      for _, field in ipairs(self.schema) do
+        local arguement = assert(self[field], string.format('No field %s on Event', field))
+        table.insert(argument_strings, arguement)
+      end
+    end
+    return string.format(
+      '%s(%s)', self.class.__name, table.concat(argument_strings, ', '))
   end,
 }
 
@@ -200,7 +215,7 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     self.data = data
   end,
 
-  read = function(file, time_delta, channel, context, ticks)
+  read = function(file, time_delta, channel, context)
     local meta_command = midi_io.readUInt8be(file)
     local length = midi_io.readUInt8be(file)
     local data = {}
@@ -213,8 +228,8 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     return meta_event(time_delta, channel, data)
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
+  write = function(self, file, context)
+    self.Event.write(self, file, context)
     midi_io.writeUInt8be(file, self.meta_command)
     local data = self.data
     midi_io.writeUInt8be(file, #data)
@@ -222,6 +237,8 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
       midi_io.writeUInt8be(file, data[i])
     end
   end,
+
+  __tostring = Event.__tostring,
 
   -- command = 0xFF,
   command = 0xF0,

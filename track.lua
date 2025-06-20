@@ -9,16 +9,16 @@ local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
 
 Track = class 'Track' {
-  __init = function(self)
-    self.events = llx.List{}
+  __init = function(self, events)
+    self.events = events or llx.List{}
   end,
 
-  _get_track_byte_length = function(self, ticks)
+  _get_track_byte_length = function(self)
     local length = 0
     local previous_command_byte = 0
     for i, event in self.events do
       -- Time delta
-      local time_delta = event.time_delta * ticks
+      local time_delta = event.time_delta
       if time_delta > (0x7f * 0x7f * 0x7f) then
         length = length + 4
       elseif time_delta > (0x7f * 0x7f) then
@@ -55,8 +55,7 @@ Track = class 'Track' {
     return length
   end,
 
-  read = function(file, ticks)
-    -- print('Track.read')
+  read = function(file)
     local track = Track()
     assert(file:read(4) == 'MTrk')
     local track_byte_length = midi_io.readUInt32be(file)
@@ -66,18 +65,28 @@ Track = class 'Track' {
       assert(file:seek() < end_of_track, 
              ('Read too many bytes for track (got %i, expected %i)'):format(
                  file:seek(), end_of_track))
-      table.insert(track.events, midi_event.Event.read(file, context, ticks))
+      table.insert(track.events, midi_event.Event.read(file, context))
     end
     return track
   end,
 
-  write = function(self, file, ticks)
+  write = function(self, file)
     file:write('MTrk')
-    midi_io.writeUInt32be(file, self:_get_track_byte_length(ticks))
+    midi_io.writeUInt32be(file, self:_get_track_byte_length())
     local context = {previous_command_byte = 0}
     for i, event in ipairs(self.events) do
-      event:write(file, context, ticks)
+      event:write(file, context)
     end
+  end,
+
+  --- Returns a human-readable representation of the MIDI file
+  __tostring = function(self)
+    local event_strings = {}
+    for i, event in ipairs(self.events) do
+      event_strings[i] = tostring(event)
+    end
+    return string.format('Track{events={%s}}',
+                         table.concat(event_strings, ', '))
   end,
 }
 
