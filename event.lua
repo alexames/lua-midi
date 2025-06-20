@@ -7,17 +7,21 @@ local _ENV, _M = llx.environment.create_module_environment()
 
 local class = llx.class
 
--- A midi event represents one of many commands a midi file can run. The Event
--- re is a union of all possible events.
--- Only regular events (i.e. not Meta events) are significant to the midi file
--- playback
-Event = class 'Event' {
-  __init = function(self, time_delta, channel)
+TimedEvent = class 'TimedEvent' {
+  __init = function(self, time_delta)
     self.time_delta = time_delta
-    self.channel = channel
   end,
 
-  _write_event_time = function(self, file, time_delta, ticks)
+  _read_event_time = function(file, ticks)
+    local time_delta = 0
+    repeat
+      local byte = midi_io.readUInt8be(file)
+      time_delta = (time_delta << 7) + (byte & 0x7F)
+    until byte & 0x80 == 0
+    return time_delta / ticks
+  end,
+
+  _write_event_time = function(file, time_delta, ticks)
     time_delta = math.floor(time_delta * ticks)
     if time_delta > (0x7F * 0x7F * 0x7F) then
       midi_io.writeUInt8be(file, (time_delta >> 21) | 0x80)
@@ -29,13 +33,62 @@ Event = class 'Event' {
     midi_io.writeUInt8be(file, time_delta & 0x7F)
   end,
 
+  read = function(file, ticks)
+  end,
+
+  write = function(self, file, ticks)
+    TimedEvent._write_event_time(file, self.time_delta, ticks)
+  end,
+}
+
+-- A midi event represents one of many commands a midi file can run.
+-- Only regular events (i.e. not Meta events) are significant to the midi file
+-- playback
+Event = class 'Event' {
+  __init = function(self, time_delta, channel)
+    TimedEvent.__init(self, time_delta)
+    self.channel = channel
+  end,
+
+  read = function(file, context, ticks)
+    local time_delta = TimedEvent._read_event_time(file, ticks)
+    local command_byte = midi_io.readUInt8be(file)
+    local event_byte = nil
+    if command_byte < 0x80 then
+      event_byte = command_byte
+      command_byte = context.previous_command_byte
+    else
+      context.previous_command_byte = command_byte
+    end
+    local channel = command_byte & 0x0F
+    local command = command_byte & 0xF0
+    local EventType = Event.types[command]
+    if EventType.schema then
+      local args = {}
+      for _=1, #EventType.schema do
+        table.insert(args, event_byte or midi_io.readUInt8be(file))
+        event_byte = nil
+      end
+      return EventType(time_delta, channel, table.unpack(args))
+    else
+      return EventType.read(file, time_delta, channel, context, ticks)
+    end
+  end,
+
   write = function(self, file, context, ticks)
-    self:_write_event_time(file, self.time_delta, ticks)
+    TimedEvent._write_event_time(file, self.time_delta, ticks)
     local command_byte = self.command | self.channel
     if command_byte ~= context.previous_command_byte
-       or self.command == self.class.Meta then
+       or self.command == 0xF0 then
       midi_io.writeUInt8be(file, command_byte)
       context.previous_command_byte = command_byte
+    end
+    if self.schema then
+      for _, field in ipairs(self.schema) do
+        local byte = assert(self[field],
+                            string.format('No field %s on Event', field))
+        midi_io.writeUInt8be(file, byte)
+      end
     end
   end,
 }
@@ -47,11 +100,10 @@ NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
     self.velocity = velocity
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
-    midi_io.writeUInt8be(file, self.note_number)
-    midi_io.writeUInt8be(file, self.velocity)
-  end,
+  schema = {
+    'note_number',
+    'velocity',
+  },
 
   command = 0x80,
 }
@@ -63,11 +115,10 @@ NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
     self.velocity = velocity
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
-    midi_io.writeUInt8be(file, self.note_number)
-    midi_io.writeUInt8be(file, self.velocity)
-  end,
+  schema = {
+    'note_number',
+    'velocity',
+  },
 
   command = 0x90,
 }
@@ -79,11 +130,10 @@ VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
     self.velocity = velocity
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
-    midi_io.writeUInt8be(file, self.note_number)
-    midi_io.writeUInt8be(file, self.velocity)
-  end,
+  schema = {
+    'note_number',
+    'velocity',
+  },
 
   command = 0xA0,
 }
@@ -95,11 +145,10 @@ ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
     self.velocity = velocity
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
-    midi_io.writeUInt8be(file, self.controller_number)
-    midi_io.writeUInt8be(file, self.velocity)
-  end,
+  schema = {
+    'controller_number',
+    'velocity',
+  },
 
   command = 0xB0,
 }
@@ -110,10 +159,9 @@ ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
     self.new_program_number = new_program_number
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
-    midi_io.writeUInt8be(file, self.new_program_number)
-  end,
+  schema = {
+    'new_program_number',
+  },
 
   command = 0xC0,
 }
@@ -124,10 +172,9 @@ ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event)
     self.channel_number = channel_number
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
-    midi_io.writeUInt8be(file, self.channel_number)
-  end,
+  schema = {
+    'channel_number',
+  },
 
   command = 0xD0,
 }
@@ -139,27 +186,45 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
     self.top = top
   end,
 
-  write = function(self, file, context, ticks)
-    self.Event.write(self, file, context, ticks)
-    midi_io.writeUInt8be(file, self.bottom)
-    midi_io.writeUInt8be(file, self.top)
-  end,
+  schema = {
+    'bottom',
+    'top',
+  },
 
   command = 0xE0,
 }
 
 MetaEvent = class 'MetaEvent' : extends(Event) {
-  __init = function(self, time_delta, channel)
+  __init = function(self, time_delta, channel, data)
     self.Event.__init(self, time_delta, channel)
+    self.data = data
+  end,
+
+  read = function(file, time_delta, channel, context, ticks)
+    local meta_command = midi_io.readUInt8be(file)
+    local length = midi_io.readUInt8be(file)
+    local data = {}
+    for i=1, length do
+      table.insert(data, midi_io.readUInt8be(file))
+    end
+    local meta_event = MetaEvent.types[meta_command]
+    assert(meta_event,
+           string.format('Meta event %02X not recognized', meta_command))
+    return meta_event(time_delta, channel, data)
   end,
 
   write = function(self, file, context, ticks)
     self.Event.write(self, file, context, ticks)
     midi_io.writeUInt8be(file, self.meta_command)
-    midi_io.writeUInt8be(file, self.length)
+    local data = self.data
+    midi_io.writeUInt8be(file, #data)
+    for i=1, #data do
+      midi_io.writeUInt8be(file, data[i])
+    end
   end,
 
-  command = 0xFF,
+  -- command = 0xFF,
+  command = 0xF0,
 }
 
 SetSequenceNumberEvent = class 'SetSequenceNumberEvent' : extends(MetaEvent) {
@@ -174,7 +239,7 @@ CopywriteEvent = class 'CopywriteEvent' : extends(MetaEvent) {
   meta_command = 0x02,
 }
 
-SequnceNameEvent = class 'SequnceNameEvent' : extends(MetaEvent) {
+SequenceNameEvent = class 'SequenceNameEvent' : extends(MetaEvent) {
   meta_command = 0x03,
 }
 
@@ -221,5 +286,46 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
 SequencerSpecificEvent = class 'SequencerSpecificEvent' : extends(MetaEvent) {
   meta_command = 0x7F,
 }
+
+local event_type_list = {
+  NoteEndEvent,
+  NoteBeginEvent,
+  VelocityChangeEvent,
+  ControllerChangeEvent,
+  ProgramChangeEvent,
+  ChannelPressureChangeEvent,
+  PitchWheelChangeEvent,
+  MetaEvent,
+}
+
+local event_types = {}
+Event.types = event_types
+for i, v in ipairs(event_type_list) do
+  event_types[v.command] = v
+end
+
+local meta_event_type_list = {
+  SetSequenceNumberEvent,
+  TextEvent,
+  CopywriteEvent,
+  SequenceNameEvent,
+  TrackInstrumentNameEvent,
+  LyricEvent,
+  MarkerEvent,
+  CueEvent,
+  PrefixAssignmentEvent,
+  EndOfTrackEvent,
+  SetTempoEvent,
+  SMPTEOffsetEvent,
+  TimeSignatureEvent,
+  KeySignatureEvent,
+  SequencerSpecificEvent,
+}
+
+local meta_event_types = {}
+MetaEvent.types = meta_event_types
+for i, v in ipairs(meta_event_type_list) do
+  meta_event_types[v.meta_command] = v
+end
 
 return _M

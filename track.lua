@@ -2,7 +2,7 @@
 
 local llx = require 'llx'
 local midi_io = require 'midi.io'
-local events = require 'midi.event'
+local midi_event = require 'midi.event'
 
 local _ENV, _M = llx.environment.create_module_environment()
 
@@ -31,28 +31,44 @@ Track = class 'Track' {
 
       -- Command
       local commandByte = event.command | event.channel
-      if commandByte ~= previous_command_byte or event.command == events.MetaEvent.command then
+      if commandByte ~= previous_command_byte or event.command == midi_event.MetaEvent.command then
         length = length + 1
         previous_command_byte = commandByte
       end
 
       -- One data byte
-      if event.command == events.ProgramChangeEvent.command
-         or event.command == events.ChannelPressureChangeEvent.command then
+      if event.command == midi_event.ProgramChangeEvent.command
+         or event.command == midi_event.ChannelPressureChangeEvent.command then
         length = length + 1
       -- Two data bytes
-      elseif event.command == events.NoteEndEvent.command
-             or event.command == events.NoteBeginEvent.command
-             or event.command == events.VelocityChangeEvent.command
-             or event.command == events.ControllerChangeEvent.command
-             or event.command == events.PitchWheelChangeEvent.command then
+      elseif event.command == midi_event.NoteEndEvent.command
+             or event.command == midi_event.NoteBeginEvent.command
+             or event.command == midi_event.VelocityChangeEvent.command
+             or event.command == midi_event.ControllerChangeEvent.command
+             or event.command == midi_event.PitchWheelChangeEvent.command then
         length = length + 2
       -- Variable data bytes
-      elseif event.command == Meta.meta_command then
-        length = length + 2 + event.meta.length
+      elseif event.command == midi_event.MetaEvent.command then
+        length = length + 2 + #event.data
       end
     end
     return length
+  end,
+
+  read = function(file, ticks)
+    -- print('Track.read')
+    local track = Track()
+    assert(file:read(4) == 'MTrk')
+    local track_byte_length = midi_io.readUInt32be(file)
+    local context = {previous_command_byte = 0}
+    local end_of_track = file:seek() + track_byte_length
+    while file:seek() ~= end_of_track do
+      assert(file:seek() < end_of_track, 
+             ('Read too many bytes for track (got %i, expected %i)'):format(
+                 file:seek(), end_of_track))
+      table.insert(track.events, midi_event.Event.read(file, context, ticks))
+    end
+    return track
   end,
 
   write = function(self, file, ticks)

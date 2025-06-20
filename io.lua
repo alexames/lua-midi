@@ -26,4 +26,22 @@ function writeUInt8be(file, i)
       (i >> 0) & 0xFF))
 end
 
+function readUInt32be(file)
+  local a, b, c, d = file:read(4):byte(1, 4)
+  return (a << 24)
+       | (b << 16)
+       | (c << 8)
+       | (d << 0)
+end
+
+function readUInt16be(file)
+  local a, b = file:read(2):byte(1, 2)
+  return (a << 8)
+       | (b << 0)
+end
+
+function readUInt8be(file)
+  return file:read(1):byte(1)
+end
+
 return _M
