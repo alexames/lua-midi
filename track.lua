@@ -12,9 +12,7 @@ local midi_event = require 'midi.event'
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
 
---------------------------------------------------------------------------------
 -- Track class: Represents a single MIDI track containing a list of events
---------------------------------------------------------------------------------
 Track = class 'Track' {
   --- Constructor
   -- @param events A list of MIDI events (default: empty llx.List)

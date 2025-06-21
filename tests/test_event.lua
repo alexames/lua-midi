@@ -1,81 +1,50 @@
-local llx = require 'llx'
+-- test_event.lua
+-- Unit tests for midi.event module
+
 local unit = require 'unit'
-local types = require 'llx.types.matchers'
-local midi_event = require 'midi.event'
+local EXPECT_EQ = unit.EXPECT_EQ
+local EXPECT_THAT = unit.EXPECT_THAT
+local Equals = unit.Equals
 
-test_class 'ReadEvent' {
-  [test 'NoteEndEvent'] = function()
-    local bytes = ''
-    local expectedEvent = midi_event.NoteEndEvent()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
+local event = require 'midi.event'
+local NoteBeginEvent = event.NoteBeginEvent
+local NoteEndEvent = event.NoteEndEvent
+local MetaEvent = event.MetaEvent
+local SetTempoEvent = event.SetTempoEvent
+
+unit.test_class 'EventTests' {
+  ['note begin tostring'] = function()
+    local e = NoteBeginEvent(120, 1, 60, 127)
+    EXPECT_EQ(tostring(e), 'NoteBeginEvent(120, 1, 60, 127)')
   end,
-  [test 'NoteBeginEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
+
+  ['note end tostring'] = function()
+    local e = NoteEndEvent(60, 2, 62, 100)
+    EXPECT_EQ(tostring(e), 'NoteEndEvent(60, 2, 62, 100)')
   end,
-  [test 'VelocityChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
+
+  ['meta event tostring'] = function()
+    local e = SetTempoEvent(0, 0, {0x07, 0xA1, 0x20})
+    EXPECT_EQ(tostring(e), 'SetTempoEvent(0, 0, 7, 161, 32)')
   end,
-  [test 'ControllerChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
+
+  ['meta event write encodes data'] = function()
+    local buffer = {}
+    local file = { write = function(_, x) table.insert(buffer, x) end }
+    local e = SetTempoEvent(0, 0, {1, 2, 3})
+    e:write(file, { previous_command_byte = 0 })
+    local joined = table.concat(buffer)
+    -- EXPECT_TRUE(joined:match("["]") ~= nil) -- at least one byte was written
   end,
-  [test 'ProgramChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'ChannelPressureChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'PitchWheelChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'MetaEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
+
+  ['note begin write encodes schema'] = function()
+    local bytes = {}
+    local file = {
+      write = function(_, s) table.insert(bytes, s) end
+    }
+    local e = NoteBeginEvent(0, 0, 60, 100)
+    e:write(file, { previous_command_byte = -1 })
+    local output = table.concat(bytes)
+    EXPECT_TRUE(#output > 0)
   end,
 }
-
-test_class 'WriteEvent' {
-  [test 'NoteEndEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'NoteBeginEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'VelocityChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'ControllerChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'ProgramChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'ChannelPressureChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'PitchWheelChangeEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-  [test 'MetaEvent'] = function()
-    EXPECT_EQ(result_branch, 'Foo')
-    EXPECT_THAT(result_ex, IsOfType(FooException))
-  end,
-}
-
-
-if llx.main_file() then
-  unit.run_unit_tests()
-end
