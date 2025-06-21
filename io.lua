@@ -1,9 +1,17 @@
 -- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
+--
+-- This module provides low-level I/O functions for reading and writing
+-- unsigned integers in big-endian format (network byte order).
+-- These functions are used for reading/writing MIDI file headers and events.
 
 local llx = require 'llx'
 
+-- Set up module environment
 local _ENV, _M = llx.environment.create_module_environment()
 
+--- Writes a 32-bit unsigned integer to a file in big-endian byte order
+-- @param file An open file handle for writing
+-- @param i The integer to write (0 <= i <= 0xFFFFFFFF)
 function writeUInt32be(file, i)
   file:write(
     string.char(
@@ -13,6 +21,9 @@ function writeUInt32be(file, i)
       (i >> 0) & 0xFF))
 end
 
+--- Writes a 16-bit unsigned integer to a file in big-endian byte order
+-- @param file An open file handle for writing
+-- @param i The integer to write (0 <= i <= 0xFFFF)
 function writeUInt16be(file, i)
   file:write(
     string.char(
@@ -20,12 +31,18 @@ function writeUInt16be(file, i)
       (i >> 0) & 0xFF))
 end
 
+--- Writes an 8-bit unsigned integer to a file
+-- @param file An open file handle for writing
+-- @param i The integer to write (0 <= i <= 0xFF)
 function writeUInt8be(file, i)
   file:write(
     string.char(
-      (i >> 0) & 0xFF))
+      (i >> 0) & 0xFF))  -- Single byte
 end
 
+--- Reads a 32-bit unsigned integer from a file in big-endian byte order
+-- @param file An open file handle for reading
+-- @return The 32-bit integer value
 function readUInt32be(file)
   local a, b, c, d = file:read(4):byte(1, 4)
   return (a << 24)
@@ -34,12 +51,18 @@ function readUInt32be(file)
        | (d << 0)
 end
 
+--- Reads a 16-bit unsigned integer from a file in big-endian byte order
+-- @param file An open file handle for reading
+-- @return The 16-bit integer value
 function readUInt16be(file)
   local a, b = file:read(2):byte(1, 2)
   return (a << 8)
        | (b << 0)
 end
 
+--- Reads an 8-bit unsigned integer from a file
+-- @param file An open file handle for reading
+-- @return The 8-bit integer value
 function readUInt8be(file)
   return file:read(1):byte(1)
 end
