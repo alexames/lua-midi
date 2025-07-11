@@ -264,6 +264,10 @@ PrefixAssignmentEvent = class 'PrefixAssignmentEvent' : extends(MetaEvent) {
   meta_command = 0x20,
 }
 
+PortChannelPrefixEvent = class 'PortChannelPrefixEvent' : extends(MetaEvent) {
+  meta_command = 0x21,
+}
+
 EndOfTrackEvent = class 'EndOfTrackEvent' : extends(MetaEvent) {
   meta_command = 0x2F,
 }
@@ -317,6 +321,7 @@ local meta_event_type_list = {
   MarkerEvent,
   CueEvent,
   PrefixAssignmentEvent,
+  PortChannelPrefixEvent,
   EndOfTrackEvent,
   SetTempoEvent,
   SMPTEOffsetEvent,
