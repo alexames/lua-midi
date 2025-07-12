@@ -12,23 +12,25 @@ local NoteEndEvent = event.NoteEndEvent
 local MetaEvent = event.MetaEvent
 local SetTempoEvent = event.SetTempoEvent
 
-unit.test_class 'EventTests' {
-  ['note begin tostring'] = function()
+_ENV = unit.create_test_env(_ENV)
+
+test_class 'EventTests' {
+  [test 'note begin tostring'] = function()
     local e = NoteBeginEvent(120, 1, 60, 127)
     EXPECT_EQ(tostring(e), 'NoteBeginEvent(120, 1, 60, 127)')
   end,
 
-  ['note end tostring'] = function()
+  [test 'note end tostring'] = function()
     local e = NoteEndEvent(60, 2, 62, 100)
     EXPECT_EQ(tostring(e), 'NoteEndEvent(60, 2, 62, 100)')
   end,
 
-  ['meta event tostring'] = function()
+  [test 'meta event tostring'] = function()
     local e = SetTempoEvent(0, 0, {0x07, 0xA1, 0x20})
     EXPECT_EQ(tostring(e), 'SetTempoEvent(0, 0, 7, 161, 32)')
   end,
 
-  ['meta event write encodes data'] = function()
+  [test 'meta event write encodes data'] = function()
     local buffer = {}
     local file = { write = function(_, x) table.insert(buffer, x) end }
     local e = SetTempoEvent(0, 0, {1, 2, 3})
@@ -37,7 +39,7 @@ unit.test_class 'EventTests' {
     -- EXPECT_TRUE(joined:match("["]") ~= nil) -- at least one byte was written
   end,
 
-  ['note begin write encodes schema'] = function()
+  [test 'note begin write encodes schema'] = function()
     local bytes = {}
     local file = {
       write = function(_, s) table.insert(bytes, s) end
@@ -48,3 +50,5 @@ unit.test_class 'EventTests' {
     EXPECT_TRUE(#output > 0)
   end,
 }
+
+run_unit_tests()
