@@ -194,6 +194,7 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
 
 MetaEvent = class 'MetaEvent' : extends(Event) {
   __init = function(self, time_delta, channel, data)
+    assert(channel == 0x0F)
     self.Event.__init(self, time_delta, channel)
     self.data = data
   end,
