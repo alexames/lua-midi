@@ -79,9 +79,11 @@ Track = class 'Track' {
 
     -- Read events until the declared byte length is consumed
     while file:seek() ~= end_of_track do
-      assert(file:seek() < end_of_track,
-             ('Read too many bytes for track (got %i, expected %i)'):format(
-               file:seek(), end_of_track))
+      assert(
+        file:seek() < end_of_track,
+        string.format(
+          'Read too many bytes for track (got %i, expected %i)',
+          file:seek(), end_of_track))
       table.insert(track.events, midi_event.Event.read(file, context))
     end
 
