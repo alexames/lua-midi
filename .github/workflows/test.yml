@@ -1,0 +1,44 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        path: midi
+    
+    - name: Install Lua
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lua5.4 liblua5.4-dev
+    
+    - name: Clone dependencies
+      run: |
+        git clone https://github.com/alexames/llx.git llx
+        git clone https://github.com/alexames/unit.git unit
+    
+    - name: Set up Lua package path
+      run: |
+        echo "LUA_PATH=$GITHUB_WORKSPACE/midi/?.lua;$GITHUB_WORKSPACE/llx/?.lua;$GITHUB_WORKSPACE/unit/?.lua;;" >> $GITHUB_ENV
+    
+    - name: Run all tests
+      working-directory: midi/tests
+      run: |
+        for test_file in test_*.lua; do
+          echo "Running $test_file..."
+          lua "$test_file" || exit 1
+        done
+    
+    - name: Report success
+      run: echo "All tests passed!"
