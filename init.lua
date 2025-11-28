@@ -8,5 +8,6 @@ return require 'llx.flatten_submodules' {
   require 'midi.midi_file',
   require 'midi.track',
   require 'midi.instrument',
+  require 'midi.validation',
   event=require 'midi.event',
 }

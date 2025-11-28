@@ -67,6 +67,16 @@ Event = class 'Event' {
     local command_byte = midi_io.readUInt8be(file)
     local event_byte = nil
 
+    -- Handle System messages (0xF0-0xFF) - these don't use running status
+    if command_byte >= 0xF0 then
+      local SystemEventType = Event.system_types[command_byte]
+      if SystemEventType then
+        return SystemEventType.read(file, time_delta)
+      else
+        error(string.format('Unknown system message: 0x%02X', command_byte))
+      end
+    end
+
     -- Handle running status: reuse previous command byte if MSB is not set
     if command_byte < 0x80 then
       event_byte = command_byte
@@ -192,6 +202,245 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
   command = 0xE0,
 }
 
+-- System Common Messages
+SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta, data)
+    TimedEvent.__init(self, time_delta)
+    self.data = data or {}
+  end,
+
+  read = function(file, time_delta)
+    local data = {}
+    local byte = midi_io.readUInt8be(file)
+    while byte ~= 0xF7 do
+      table.insert(data, byte)
+      byte = midi_io.readUInt8be(file)
+    end
+    return SystemExclusiveEvent(time_delta, data)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xF0)
+    for _, byte in ipairs(self.data) do
+      midi_io.writeUInt8be(file, byte)
+    end
+    midi_io.writeUInt8be(file, 0xF7)
+  end,
+
+  __tostring = function(self)
+    return string.format('SystemExclusiveEvent(%d, %d bytes)', self.time_delta, #self.data)
+  end,
+}
+
+MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta, message_type, values)
+    TimedEvent.__init(self, time_delta)
+    self.message_type = message_type
+    self.values = values
+  end,
+
+  read = function(file, time_delta)
+    local data = midi_io.readUInt8be(file)
+    local message_type = (data >> 4) & 0x07
+    local values = data & 0x0F
+    return MIDITimeCodeQuarterFrameEvent(time_delta, message_type, values)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xF1)
+    local data = ((self.message_type & 0x07) << 4) | (self.values & 0x0F)
+    midi_io.writeUInt8be(file, data)
+  end,
+
+  __tostring = function(self)
+    return string.format('MIDITimeCodeQuarterFrameEvent(%d, type=%d, values=%d)', 
+                         self.time_delta, self.message_type, self.values)
+  end,
+}
+
+SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta, position)
+    TimedEvent.__init(self, time_delta)
+    self.position = position
+  end,
+
+  read = function(file, time_delta)
+    local lsb = midi_io.readUInt8be(file)
+    local msb = midi_io.readUInt8be(file)
+    local position = (msb << 7) | lsb
+    return SongPositionPointerEvent(time_delta, position)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xF2)
+    midi_io.writeUInt8be(file, self.position & 0x7F)
+    midi_io.writeUInt8be(file, (self.position >> 7) & 0x7F)
+  end,
+
+  __tostring = function(self)
+    return string.format('SongPositionPointerEvent(%d, position=%d)', self.time_delta, self.position)
+  end,
+}
+
+SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta, song_number)
+    TimedEvent.__init(self, time_delta)
+    self.song_number = song_number
+  end,
+
+  read = function(file, time_delta)
+    local song_number = midi_io.readUInt8be(file)
+    return SongSelectEvent(time_delta, song_number)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xF3)
+    midi_io.writeUInt8be(file, self.song_number)
+  end,
+
+  __tostring = function(self)
+    return string.format('SongSelectEvent(%d, song=%d)', self.time_delta, self.song_number)
+  end,
+}
+
+TuneRequestEvent = class 'TuneRequestEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta)
+    TimedEvent.__init(self, time_delta)
+  end,
+
+  read = function(file, time_delta)
+    return TuneRequestEvent(time_delta)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xF6)
+  end,
+
+  __tostring = function(self)
+    return string.format('TuneRequestEvent(%d)', self.time_delta)
+  end,
+}
+
+-- System Real-Time Messages
+TimingClockEvent = class 'TimingClockEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta)
+    TimedEvent.__init(self, time_delta)
+  end,
+
+  read = function(file, time_delta)
+    return TimingClockEvent(time_delta)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xF8)
+  end,
+
+  __tostring = function(self)
+    return string.format('TimingClockEvent(%d)', self.time_delta)
+  end,
+}
+
+StartEvent = class 'StartEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta)
+    TimedEvent.__init(self, time_delta)
+  end,
+
+  read = function(file, time_delta)
+    return StartEvent(time_delta)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xFA)
+  end,
+
+  __tostring = function(self)
+    return string.format('StartEvent(%d)', self.time_delta)
+  end,
+}
+
+ContinueEvent = class 'ContinueEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta)
+    TimedEvent.__init(self, time_delta)
+  end,
+
+  read = function(file, time_delta)
+    return ContinueEvent(time_delta)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xFB)
+  end,
+
+  __tostring = function(self)
+    return string.format('ContinueEvent(%d)', self.time_delta)
+  end,
+}
+
+StopEvent = class 'StopEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta)
+    TimedEvent.__init(self, time_delta)
+  end,
+
+  read = function(file, time_delta)
+    return StopEvent(time_delta)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xFC)
+  end,
+
+  __tostring = function(self)
+    return string.format('StopEvent(%d)', self.time_delta)
+  end,
+}
+
+ActiveSensingEvent = class 'ActiveSensingEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta)
+    TimedEvent.__init(self, time_delta)
+  end,
+
+  read = function(file, time_delta)
+    return ActiveSensingEvent(time_delta)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xFE)
+  end,
+
+  __tostring = function(self)
+    return string.format('ActiveSensingEvent(%d)', self.time_delta)
+  end,
+}
+
+SystemResetEvent = class 'SystemResetEvent' : extends(TimedEvent) {
+  __init = function(self, time_delta)
+    TimedEvent.__init(self, time_delta)
+  end,
+
+  read = function(file, time_delta)
+    return SystemResetEvent(time_delta)
+  end,
+
+  write = function(self, file)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xFF)
+  end,
+
+  __tostring = function(self)
+    return string.format('SystemResetEvent(%d)', self.time_delta)
+  end,
+}
+
 MetaEvent = class 'MetaEvent' : extends(Event) {
   __init = function(self, time_delta, channel, data)
     assert(channel == 0x0F)
@@ -261,6 +510,14 @@ CueEvent = class 'CueEvent' : extends(MetaEvent) {
   meta_command = 0x07,
 }
 
+ProgramNameEvent = class 'ProgramNameEvent' : extends(MetaEvent) {
+  meta_command = 0x08,
+}
+
+DeviceNameEvent = class 'DeviceNameEvent' : extends(MetaEvent) {
+  meta_command = 0x09,
+}
+
 PrefixAssignmentEvent = class 'PrefixAssignmentEvent' : extends(MetaEvent) {
   meta_command = 0x20,
 }
@@ -275,18 +532,109 @@ EndOfTrackEvent = class 'EndOfTrackEvent' : extends(MetaEvent) {
 
 SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   meta_command = 0x51,
+
+  -- Get tempo in microseconds per quarter note
+  get_tempo = function(self)
+    if #self.data ~= 3 then return nil end
+    return (self.data[1] << 16) | (self.data[2] << 8) | self.data[3]
+  end,
+
+  -- Set tempo in microseconds per quarter note
+  set_tempo = function(self, microseconds_per_quarter)
+    self.data = {
+      (microseconds_per_quarter >> 16) & 0xFF,
+      (microseconds_per_quarter >> 8) & 0xFF,
+      microseconds_per_quarter & 0xFF,
+    }
+  end,
+
+  -- Get tempo in BPM
+  get_bpm = function(self)
+    local tempo = self:get_tempo()
+    if not tempo then return nil end
+    return 60000000 / tempo
+  end,
+
+  -- Set tempo in BPM
+  set_bpm = function(self, bpm)
+    self:set_tempo(math.floor(60000000 / bpm))
+  end,
 }
 
 SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   meta_command = 0x54,
+
+  -- Get SMPTE offset components
+  get_offset = function(self)
+    if #self.data ~= 5 then return nil end
+    return {
+      hours = self.data[1],
+      minutes = self.data[2],
+      seconds = self.data[3],
+      frames = self.data[4],
+      fractional_frames = self.data[5],
+    }
+  end,
+
+  -- Set SMPTE offset components
+  set_offset = function(self, hours, minutes, seconds, frames, fractional_frames)
+    self.data = { hours, minutes, seconds, frames, fractional_frames or 0 }
+  end,
 }
 
 TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   meta_command = 0x58,
+
+  -- Get time signature components
+  get_time_signature = function(self)
+    if #self.data ~= 4 then return nil end
+    return {
+      numerator = self.data[1],
+      denominator = 2 ^ self.data[2],
+      clocks_per_metronome_click = self.data[3],
+      thirty_seconds_per_quarter = self.data[4],
+    }
+  end,
+
+  -- Set time signature (e.g., 4/4, 3/4, 6/8)
+  set_time_signature = function(self, numerator, denominator, clocks_per_click, thirty_seconds_per_quarter)
+    -- Denominator must be a power of 2
+    local denominator_power = math.floor(math.log(denominator) / math.log(2))
+    self.data = {
+      numerator,
+      denominator_power,
+      clocks_per_click or 24,
+      thirty_seconds_per_quarter or 8,
+    }
+  end,
 }
 
 KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
   meta_command = 0x59,
+
+  -- Get key signature components
+  get_key_signature = function(self)
+    if #self.data ~= 2 then return nil end
+    local sharps_flats = self.data[1]
+    -- Convert from unsigned to signed
+    if sharps_flats > 127 then
+      sharps_flats = sharps_flats - 256
+    end
+    return {
+      sharps_flats = sharps_flats,  -- -7 (7 flats) to +7 (7 sharps)
+      is_minor = self.data[2] == 1,
+    }
+  end,
+
+  -- Set key signature
+  set_key_signature = function(self, sharps_flats, is_minor)
+    -- Convert from signed to unsigned
+    local sf = sharps_flats
+    if sf < 0 then
+      sf = sf + 256
+    end
+    self.data = { sf, is_minor and 1 or 0 }
+  end,
 }
 
 SequencerSpecificEvent = class 'SequencerSpecificEvent' : extends(MetaEvent) {
@@ -321,6 +669,8 @@ local meta_event_type_list = {
   LyricEvent,
   MarkerEvent,
   CueEvent,
+  ProgramNameEvent,
+  DeviceNameEvent,
   PrefixAssignmentEvent,
   PortChannelPrefixEvent,
   EndOfTrackEvent,
@@ -337,4 +687,20 @@ for _, v in ipairs(meta_event_type_list) do
   meta_event_types[v.meta_command] = v
 end
 
+-- Register System Common and System Real-Time messages
+local system_event_types = {}
+Event.system_types = system_event_types
+system_event_types[0xF0] = SystemExclusiveEvent
+system_event_types[0xF1] = MIDITimeCodeQuarterFrameEvent
+system_event_types[0xF2] = SongPositionPointerEvent
+system_event_types[0xF3] = SongSelectEvent
+system_event_types[0xF6] = TuneRequestEvent
+system_event_types[0xF8] = TimingClockEvent
+system_event_types[0xFA] = StartEvent
+system_event_types[0xFB] = ContinueEvent
+system_event_types[0xFC] = StopEvent
+system_event_types[0xFE] = ActiveSensingEvent
+system_event_types[0xFF] = SystemResetEvent
+
 return _M
+
