@@ -2,9 +2,6 @@
 -- Unit tests for midi.event module
 
 local unit = require 'unit'
-local EXPECT_EQ = unit.EXPECT_EQ
-local EXPECT_THAT = unit.EXPECT_THAT
-local Equals = unit.Equals
 
 local event = require 'midi.event'
 local NoteBeginEvent = event.NoteBeginEvent
@@ -14,32 +11,32 @@ local SetTempoEvent = event.SetTempoEvent
 
 _ENV = unit.create_test_env(_ENV)
 
-test_class 'EventTests' {
-  [test 'note begin tostring'] = function()
+describe('EventTests', function()
+  it('should convert note begin event to string correctly', function()
     local e = NoteBeginEvent(120, 1, 60, 127)
-    EXPECT_EQ(tostring(e), 'NoteBeginEvent(120, 1, 60, 127)')
-  end,
+    expect(tostring(e)).to.be_equal_to('NoteBeginEvent(120, 1, 60, 127)')
+  end)
 
-  [test 'note end tostring'] = function()
+  it('should convert note end event to string correctly', function()
     local e = NoteEndEvent(60, 2, 62, 100)
-    EXPECT_EQ(tostring(e), 'NoteEndEvent(60, 2, 62, 100)')
-  end,
+    expect(tostring(e)).to.be_equal_to('NoteEndEvent(60, 2, 62, 100)')
+  end)
 
-  [test 'meta event tostring'] = function()
-    local e = SetTempoEvent(0, 0, {0x07, 0xA1, 0x20})
-    EXPECT_EQ(tostring(e), 'SetTempoEvent(0, 0, 7, 161, 32)')
-  end,
+  it('should convert meta event to string correctly', function()
+    local e = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    expect(tostring(e)).to.be_equal_to('SetTempoEvent(0, 15, 7, 161, 32)')
+  end)
 
-  [test 'meta event write encodes data'] = function()
+  it('should encode data when meta event write is called', function()
     local buffer = {}
     local file = { write = function(_, x) table.insert(buffer, x) end }
-    local e = SetTempoEvent(0, 0, {1, 2, 3})
+    local e = SetTempoEvent(0, 0x0F, {1, 2, 3})
     e:write(file, { previous_command_byte = 0 })
     local joined = table.concat(buffer)
-    -- EXPECT_TRUE(joined:match("["]") ~= nil) -- at least one byte was written
-  end,
+    -- expect(joined:match("["]") ~= nil).to.be_truthy() -- at least one byte was written
+  end)
 
-  [test 'note begin write encodes schema'] = function()
+  it('should encode schema when note begin write is called', function()
     local bytes = {}
     local file = {
       write = function(_, s) table.insert(bytes, s) end
@@ -47,8 +44,8 @@ test_class 'EventTests' {
     local e = NoteBeginEvent(0, 0, 60, 100)
     e:write(file, { previous_command_byte = -1 })
     local output = table.concat(bytes)
-    EXPECT_TRUE(#output > 0)
-  end,
-}
+    expect(#output > 0).to.be_truthy()
+  end)
+end)
 
 run_unit_tests()

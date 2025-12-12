@@ -2,38 +2,69 @@
 -- Unit tests for midi.midi_file
 
 local unit = require 'unit'
-local EXPECT_EQ = unit.EXPECT_EQ
-local EXPECT_TRUE = unit.EXPECT_TRUE
 
 local MidiFile = require 'midi.midi_file'.MidiFile
 
-unit.test_class 'MidiFileTests' {
-  ['construct with positional args'] = function()
+_ENV = unit.create_test_env(_ENV)
+
+describe('MidiFileTests', function()
+  it('should set format when constructed with positional args', function()
     local mf = MidiFile(1, 96)
-    EXPECT_EQ(mf.format, 1)
-    EXPECT_EQ(mf.ticks, 96)
-    EXPECT_EQ(#mf.tracks, 0)
-  end,
+    expect(mf.format).to.be_equal_to(1)
+  end)
 
-  ['construct with table args'] = function()
+  it('should set ticks when constructed with positional args', function()
+    local mf = MidiFile(1, 96)
+    expect(mf.ticks).to.be_equal_to(96)
+  end)
+
+  it('should have zero tracks when constructed with positional args', function()
+    local mf = MidiFile(1, 96)
+    expect(#mf.tracks).to.be_equal_to(0)
+  end)
+
+  it('should set format when constructed with table args', function()
     local mf = MidiFile { format = 2, ticks = 120 }
-    EXPECT_EQ(mf.format, 2)
-    EXPECT_EQ(mf.ticks, 120)
-    EXPECT_EQ(#mf.tracks, 0)
-  end,
+    expect(mf.format).to.be_equal_to(2)
+  end)
 
-  ['tostring includes format and ticks'] = function()
+  it('should set ticks when constructed with table args', function()
+    local mf = MidiFile { format = 2, ticks = 120 }
+    expect(mf.ticks).to.be_equal_to(120)
+  end)
+
+  it('should have zero tracks when constructed with table args', function()
+    local mf = MidiFile { format = 2, ticks = 120 }
+    expect(#mf.tracks).to.be_equal_to(0)
+  end)
+
+  it('should include MidiFile in tostring', function()
     local mf = MidiFile(0, 480)
     local str = tostring(mf)
-    EXPECT_TRUE(str:match('MidiFile'))
-    EXPECT_TRUE(str:match('format=0'))
-    EXPECT_TRUE(str:match('ticks=480'))
-  end,
+    expect(str:match('MidiFile')).to.be_truthy()
+  end)
 
-  ['tobytes returns binary data'] = function()
+  it('should include format in tostring', function()
+    local mf = MidiFile(0, 480)
+    local str = tostring(mf)
+    expect(str:match('format=0')).to.be_truthy()
+  end)
+
+  it('should include ticks in tostring', function()
+    local mf = MidiFile(0, 480)
+    local str = tostring(mf)
+    expect(str:match('ticks=480')).to.be_truthy()
+  end)
+
+  it('should return string type when tobytes is called', function()
     local mf = MidiFile(1, 96)
     local bin = mf:__tobytes()
-    EXPECT_TRUE(type(bin) == 'string')
-    EXPECT_TRUE(#bin > 6)  -- Should at least include the MIDI header
-  end,
-}
+    expect(type(bin) == 'string').to.be_truthy()
+  end)
+
+  it('should return binary data longer than 6 bytes when tobytes is called', function()
+    local mf = MidiFile(1, 96)
+    local bin = mf:__tobytes()
+    expect(#bin > 6).to.be_truthy()  -- Should at least include the MIDI header
+  end)
+end)

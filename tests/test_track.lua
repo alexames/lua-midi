@@ -2,34 +2,53 @@
 -- Unit tests for midi.track
 
 local unit = require 'unit'
-local EXPECT_EQ = unit.EXPECT_EQ
-local EXPECT_TRUE = unit.EXPECT_TRUE
 
 local Track = require 'midi.track'.Track
 local NoteBeginEvent = require 'midi.event'.NoteBeginEvent
 
-unit.test_class 'TrackTests' {
-  ['construct empty track'] = function()
-    local track = Track()
-    EXPECT_EQ(#track.events, 0)
-  end,
+_ENV = unit.create_test_env(_ENV)
 
-  ['track tostring with events'] = function()
+describe('TrackTests', function()
+  it('should construct empty track with zero events', function()
+    local track = Track()
+    expect(#track.events).to.be_equal_to(0)
+  end)
+
+  it('should include Track in tostring when track has events', function()
     local e = NoteBeginEvent(0, 0, 60, 100)
     local track = Track { e }
     local str = tostring(track)
-    EXPECT_TRUE(str:match('Track{events={'))
-    EXPECT_TRUE(str:match('NoteBeginEvent'))
-  end,
+    expect(str:match('Track{events={')).to.be_truthy()
+  end)
 
-  ['track write produces output'] = function()
+  it('should include NoteBeginEvent in tostring when track has events', function()
+    local e = NoteBeginEvent(0, 0, 60, 100)
+    local track = Track { e }
+    local str = tostring(track)
+    expect(str:match('NoteBeginEvent')).to.be_truthy()
+  end)
+
+  it('should produce string output when track write is called', function()
     local buffer = {}
     local file = { write = function(_, s) table.insert(buffer, s) end }
     local e = NoteBeginEvent(0, 0, 60, 100)
     local track = Track { e }
     track:write(file)
     local out = table.concat(buffer)
-    EXPECT_TRUE(type(out) == 'string')
-    EXPECT_TRUE(#out > 4) -- should include 'MTrk' and length
-  end,
-}
+    expect(type(out) == 'string').to.be_truthy()
+  end)
+
+  it('should produce output longer than 4 bytes when track write is called', function()
+    local buffer = {}
+    local file = { write = function(_, s) table.insert(buffer, s) end }
+    local e = NoteBeginEvent(0, 0, 60, 100)
+    local track = Track { e }
+    track:write(file)
+    local out = table.concat(buffer)
+    expect(#out > 4).to.be_truthy() -- should include 'MTrk' and length
+  end)
+end)
+
+if llx and llx.main_file then
+  unit.run_unit_tests()
+end

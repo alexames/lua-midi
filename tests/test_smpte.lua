@@ -2,93 +2,147 @@
 -- Unit tests for SMPTE time division support
 
 local unit = require 'unit'
-local EXPECT_EQ = unit.EXPECT_EQ
-local EXPECT_TRUE = unit.EXPECT_TRUE
-local EXPECT_FALSE = unit.EXPECT_FALSE
 
 local MidiFile = require 'midi.midi_file'.MidiFile
 
 _ENV = unit.create_test_env(_ENV)
 
-test_class 'SMPTETimingTests' {
-  [test 'default is not SMPTE'] = function()
+describe('SMPTETimingTests', function()
+  it('should return false for is_smpte by default', function()
     local mf = MidiFile()
-    EXPECT_FALSE(mf:is_smpte())
-  end,
+    expect(mf:is_smpte()).to.be_falsy()
+  end)
 
-  [test 'set SMPTE timing 24fps'] = function()
+  it('should return true for is_smpte when SMPTE timing is set to 24fps', function()
     local mf = MidiFile()
     mf:set_smpte_timing(24, 40)
-    EXPECT_TRUE(mf:is_smpte())
-    local fps, tpf = mf:get_smpte_timing()
-    EXPECT_EQ(fps, 24)
-    EXPECT_EQ(tpf, 40)
-  end,
+    expect(mf:is_smpte()).to.be_truthy()
+  end)
 
-  [test 'set SMPTE timing 25fps'] = function()
+  it('should return correct fps when SMPTE timing is set to 24fps', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(24, 40)
+    local fps, tpf = mf:get_smpte_timing()
+    expect(fps).to.be_equal_to(24)
+  end)
+
+  it('should return correct ticks per frame when SMPTE timing is set to 24fps', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(24, 40)
+    local fps, tpf = mf:get_smpte_timing()
+    expect(tpf).to.be_equal_to(40)
+  end)
+
+  it('should return correct fps when SMPTE timing is set to 25fps', function()
     local mf = MidiFile()
     mf:set_smpte_timing(25, 40)
     local fps, tpf = mf:get_smpte_timing()
-    EXPECT_EQ(fps, 25)
-    EXPECT_EQ(tpf, 40)
-  end,
+    expect(fps).to.be_equal_to(25)
+  end)
 
-  [test 'set SMPTE timing 29.97fps drop-frame'] = function()
+  it('should return correct ticks per frame when SMPTE timing is set to 25fps', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(25, 40)
+    local fps, tpf = mf:get_smpte_timing()
+    expect(tpf).to.be_equal_to(40)
+  end)
+
+  it('should return correct fps when SMPTE timing is set to 29.97fps drop-frame', function()
     local mf = MidiFile()
     mf:set_smpte_timing(29.97, 40)
     local fps, tpf = mf:get_smpte_timing()
-    EXPECT_TRUE(math.abs(fps - 29.97) < 0.01)
-    EXPECT_EQ(tpf, 40)
-  end,
+    expect(math.abs(fps - 29.97) < 0.01).to.be_truthy()
+  end)
 
-  [test 'set SMPTE timing 30fps'] = function()
+  it('should return correct ticks per frame when SMPTE timing is set to 29.97fps', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(29.97, 40)
+    local fps, tpf = mf:get_smpte_timing()
+    expect(tpf).to.be_equal_to(40)
+  end)
+
+  it('should return correct fps when SMPTE timing is set to 30fps', function()
     local mf = MidiFile()
     mf:set_smpte_timing(30, 40)
     local fps, tpf = mf:get_smpte_timing()
-    EXPECT_EQ(fps, 30)
-    EXPECT_EQ(tpf, 40)
-  end,
+    expect(fps).to.be_equal_to(30)
+  end)
 
-  [test 'invalid frame rate throws error'] = function()
+  it('should return correct ticks per frame when SMPTE timing is set to 30fps', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(30, 40)
+    local fps, tpf = mf:get_smpte_timing()
+    expect(tpf).to.be_equal_to(40)
+  end)
+
+  it('should throw error when invalid frame rate is set', function()
     local mf = MidiFile()
     local success = pcall(function()
       mf:set_smpte_timing(60, 40)  -- Invalid frame rate
     end)
-    EXPECT_FALSE(success)
-  end,
+    expect(success).to.be_falsy()
+  end)
 
-  [test 'SMPTE ticks stored as table'] = function()
+  it('should store SMPTE ticks as table when SMPTE timing is set', function()
     local mf = MidiFile()
     mf:set_smpte_timing(25, 40)
-    EXPECT_EQ(type(mf.ticks), 'table')
-    EXPECT_TRUE(mf.ticks.smpte)
-    EXPECT_EQ(mf.ticks.frame_rate, 25)
-    EXPECT_EQ(mf.ticks.ticks_per_frame, 40)
-  end,
+    expect(type(mf.ticks) == 'table').to.be_truthy()
+  end)
 
-  [test 'SMPTE encoded value is negative'] = function()
+  it('should set smpte flag to true when SMPTE timing is set', function()
     local mf = MidiFile()
     mf:set_smpte_timing(25, 40)
-    EXPECT_TRUE(mf.ticks.encoded < 0)
-  end,
+    expect(mf.ticks.smpte).to.be_truthy()
+  end)
 
-  [test 'regular ticks not SMPTE'] = function()
+  it('should store frame rate when SMPTE timing is set', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(25, 40)
+    expect(mf.ticks.frame_rate).to.be_equal_to(25)
+  end)
+
+  it('should store ticks per frame when SMPTE timing is set', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(25, 40)
+    expect(mf.ticks.ticks_per_frame).to.be_equal_to(40)
+  end)
+
+  it('should encode SMPTE value as negative', function()
+    local mf = MidiFile()
+    mf:set_smpte_timing(25, 40)
+    expect(mf.ticks.encoded < 0).to.be_truthy()
+  end)
+
+  it('should return false for is_smpte when regular ticks are used', function()
     local mf = MidiFile{ticks = 96}
-    EXPECT_FALSE(mf:is_smpte())
-    EXPECT_EQ(type(mf.ticks), 'number')
-    EXPECT_EQ(mf.ticks, 96)
-  end,
+    expect(mf:is_smpte()).to.be_falsy()
+  end)
 
-  [test 'get_smpte_timing returns nil for non-SMPTE'] = function()
+  it('should store regular ticks as number', function()
+    local mf = MidiFile{ticks = 96}
+    expect(type(mf.ticks) == 'number').to.be_truthy()
+  end)
+
+  it('should store correct value for regular ticks', function()
+    local mf = MidiFile{ticks = 96}
+    expect(mf.ticks).to.be_equal_to(96)
+  end)
+
+  it('should return nil fps when get_smpte_timing is called on non-SMPTE file', function()
     local mf = MidiFile{ticks = 96}
     local fps, tpf = mf:get_smpte_timing()
-    EXPECT_EQ(fps, nil)
-    EXPECT_EQ(tpf, nil)
-  end,
-}
+    expect(fps).to.be_nil()
+  end)
 
-test_class 'SMPTERoundTripTests' {
-  [test 'write and read SMPTE 24fps'] = function()
+  it('should return nil ticks per frame when get_smpte_timing is called on non-SMPTE file', function()
+    local mf = MidiFile{ticks = 96}
+    local fps, tpf = mf:get_smpte_timing()
+    expect(tpf).to.be_nil()
+  end)
+end)
+
+describe('SMPTERoundTripTests', function()
+  it('should generate bytes when writing SMPTE 24fps file', function()
     local mf1 = MidiFile()
     mf1:set_smpte_timing(24, 40)
     
@@ -97,32 +151,32 @@ test_class 'SMPTERoundTripTests' {
     
     -- Read back (would need to implement reading from bytes)
     -- For now, just verify bytes were generated
-    EXPECT_TRUE(#bytes > 0)
-  end,
+    expect(#bytes > 0).to.be_truthy()
+  end)
 
-  [test 'write and read SMPTE 25fps'] = function()
+  it('should generate bytes when writing SMPTE 25fps file', function()
     local mf1 = MidiFile()
     mf1:set_smpte_timing(25, 80)
     
     local bytes = mf1:__tobytes()
-    EXPECT_TRUE(#bytes > 0)
-  end,
+    expect(#bytes > 0).to.be_truthy()
+  end)
 
-  [test 'write and read SMPTE 29.97fps'] = function()
+  it('should generate bytes when writing SMPTE 29.97fps file', function()
     local mf1 = MidiFile()
     mf1:set_smpte_timing(29.97, 40)
     
     local bytes = mf1:__tobytes()
-    EXPECT_TRUE(#bytes > 0)
-  end,
+    expect(#bytes > 0).to.be_truthy()
+  end)
 
-  [test 'write and read SMPTE 30fps'] = function()
+  it('should generate bytes when writing SMPTE 30fps file', function()
     local mf1 = MidiFile()
     mf1:set_smpte_timing(30, 40)
     
     local bytes = mf1:__tobytes()
-    EXPECT_TRUE(#bytes > 0)
-  end,
-}
+    expect(#bytes > 0).to.be_truthy()
+  end)
+end)
 
 run_unit_tests()

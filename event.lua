@@ -559,6 +559,17 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   set_bpm = function(self, bpm)
     self:set_tempo(math.floor(60000000 / bpm))
   end,
+
+  -- Custom tostring to include data array
+  __tostring = function(self)
+    local argument_strings = { self.time_delta, self.channel }
+    if self.data then
+      for i = 1, #self.data do
+        table.insert(argument_strings, self.data[i])
+      end
+    end
+    return string.format('%s(%s)', self.class.__name, table.concat(argument_strings, ', '))
+  end,
 }
 
 SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {

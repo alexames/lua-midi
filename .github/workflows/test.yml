@@ -11,6 +11,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - name: Checkout repository
@@ -23,14 +25,29 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y lua5.4 liblua5.4-dev
     
-    - name: Clone dependencies
-      run: |
-        git clone https://github.com/alexames/llx.git llx
-        git clone https://github.com/alexames/unit.git unit
+    - name: Checkout llx dependency
+      uses: actions/checkout@v4
+      with:
+        repository: alexames/llx
+        path: llx
+        token: ${{ secrets.REPO_ACCESS_TOKEN }}
+    - name: Checkout unit dependency
+      uses: actions/checkout@v4
+      with:
+        repository: alexames/unit
+        path: unit
+        token: ${{ secrets.REPO_ACCESS_TOKEN }}
     
     - name: Set up Lua package path
       run: |
-        echo "LUA_PATH=$GITHUB_WORKSPACE/midi/?.lua;$GITHUB_WORKSPACE/llx/?.lua;$GITHUB_WORKSPACE/unit/?.lua;;" >> $GITHUB_ENV
+        export LUA_PATH="$GITHUB_WORKSPACE/?.lua;$GITHUB_WORKSPACE/?/init.lua;;"
+        export LUA_PATH_5_4="$GITHUB_WORKSPACE/?.lua;$GITHUB_WORKSPACE/?/init.lua;;"
+        echo "LUA_PATH=$LUA_PATH" >> $GITHUB_ENV
+        echo "LUA_PATH_5_4=$LUA_PATH_5_4" >> $GITHUB_ENV
+        echo "Verifying dependencies:"
+        echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+        ls -la $GITHUB_WORKSPACE/ | grep -E "(unit|llx|midi)" || echo "Dependencies not found"
+        test -f "$GITHUB_WORKSPACE/unit/init.lua" && echo "✓ unit/init.lua exists" || echo "✗ unit/init.lua missing"
     
     - name: Run all tests
       working-directory: midi/tests
