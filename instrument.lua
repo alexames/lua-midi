@@ -1,9 +1,27 @@
--- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
+--- MIDI Instrument Module.
+-- Defines the General MIDI (GM) instrument program numbers as an enumeration.
+-- These correspond to the standard 128 GM program numbers (0-127).
+--
+-- @module midi.instrument
+-- @copyright 2024 Alexander Ames
+-- @license MIT
+-- @usage
+-- local midi = require 'midi'
+--
+-- -- Use instrument names
+-- local piano = midi.instrument.acoustic_grand  -- 0
+-- local violin = midi.instrument.violin         -- 40
+--
+-- -- Set program change
+-- local event = midi.event.ProgramChangeEvent(0, 0, midi.instrument.acoustic_grand)
 
 local llx = require 'llx'
 
 local _ENV, _M = llx.environment.create_module_environment()
 
+--- General MIDI instrument enumeration.
+-- Maps instrument names to program numbers (0-127).
+-- @table instrument
 instrument = llx.enum 'instrument' {
   -- Piano
   [0] = 'acoustic_grand',

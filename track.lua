@@ -1,9 +1,20 @@
--- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
---
+--- MIDI Track Module.
 -- This module defines the `Track` class, which represents a single track in a MIDI file.
--- A MIDI track is a sequence of events (notes, control changes, meta info, etc.), 
--- each with its own delta time. Tracks are serialized with a byte length and written 
+-- A MIDI track is a sequence of events (notes, control changes, meta info, etc.),
+-- each with its own delta time. Tracks are serialized with a byte length and written
 -- with the 'MTrk' header prefix.
+--
+-- @module midi.track
+-- @copyright 2024 Alexander Ames
+-- @license MIT
+-- @usage
+-- local track = require 'midi.track'
+-- local event = require 'midi.event'
+--
+-- -- Create a new track with events
+-- local t = track.Track()
+-- table.insert(t.events, event.NoteBeginEvent(0, 0, 60, 100))
+-- table.insert(t.events, event.NoteEndEvent(480, 0, 60, 0))
 
 local llx = require 'llx'
 local midi_io = require 'midi.io'
@@ -12,16 +23,23 @@ local midi_event = require 'midi.event'
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
 
--- Track class: Represents a single MIDI track containing a list of events
+--- Track class representing a single MIDI track.
+-- A track contains a list of MIDI events with delta times.
+-- @type Track
+-- @field events List List of MIDI events
 Track = class 'Track' {
-  --- Constructor
-  -- @param events A list of MIDI events (default: empty llx.List)
+  --- Create a new Track.
+  -- @function Track:__init
+  -- @param events List Optional list of MIDI events (default: empty list)
+  -- @return Track A new Track instance
   __init = function(self, events)
     self.events = events or llx.List{}
   end,
 
-  --- Calculates the total byte length of the track (excluding 'MTrk' and length field)
+  --- Calculate the total byte length of the track (excluding 'MTrk' and length field).
   -- This is needed for writing the track to a MIDI file.
+  -- @return number Byte length of the track data
+  -- @local
   _get_track_byte_length = function(self)
     local length = 0
     local previous_command_byte = 0
@@ -66,9 +84,11 @@ Track = class 'Track' {
     return length
   end,
 
-  --- Reads a Track from the given file handle (starting after 'MTrk')
-  -- @param file A binary input file
-  -- @return A Track object populated with parsed events
+  --- Read a Track from the given file handle.
+  -- Expects the 'MTrk' chunk header at the current file position.
+  -- @param file file A binary input file handle
+  -- @return Track A Track object populated with parsed events
+  -- @raise error if 'MTrk' header is missing or track is malformed
   read = function(file)
     local track = Track()
     assert(file:read(4) == 'MTrk', "Expected 'MTrk' chunk")
@@ -90,8 +110,10 @@ Track = class 'Track' {
     return track
   end,
 
-  --- Writes a Track to the given file handle
-  -- Includes the 'MTrk' header and track length
+  --- Write a Track to the given file handle.
+  -- Includes the 'MTrk' header and track length.
+  -- @function Track:write
+  -- @param file file A binary output file handle
   write = function(self, file)
     file:write('MTrk')
     midi_io.writeUInt32be(file, self:_get_track_byte_length())
@@ -102,8 +124,9 @@ Track = class 'Track' {
     end
   end,
 
-  --- Returns a human-readable string representation of the track
-  -- Includes all events in order
+  --- Returns a human-readable string representation of the track.
+  -- Includes all events in order.
+  -- @return string String representation of the track
   __tostring = function(self)
     local event_strings = {}
     for i, event in ipairs(self.events) do

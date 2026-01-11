@@ -1,16 +1,31 @@
--- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
---
+--- MIDI Validation Module.
 -- This module provides validation utilities for MIDI values to ensure they
 -- conform to the MIDI specification constraints.
+--
+-- All validate_* functions return (true) on success or (false, error_message) on failure.
+-- All assert_* functions throw an error if validation fails.
+--
+-- @module midi.validation
+-- @copyright 2024 Alexander Ames
+-- @license MIT
+-- @usage
+-- local validation = require 'midi.validation'
+--
+-- -- Validate values
+-- local ok, err = validation.validate_channel(16)  -- false, "Channel must be 0-15, got 16"
+--
+-- -- Assert values (throws on invalid)
+-- validation.assert_note(60)  -- OK
+-- validation.assert_note(128) -- Error!
 
 local llx = require 'llx'
 
 local _ENV, _M = llx.environment.create_module_environment()
 
---- Validates a MIDI channel number (0-15)
--- @param channel The channel number to validate
--- @return true if valid, false otherwise
--- @return error message if invalid
+--- Validate a MIDI channel number (0-15).
+-- @param channel number The channel number to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
 function validate_channel(channel)
   if type(channel) ~= 'number' then
     return false, 'Channel must be a number'
@@ -24,10 +39,10 @@ function validate_channel(channel)
   return true
 end
 
---- Validates a MIDI note number (0-127)
--- @param note The note number to validate
--- @return true if valid, false otherwise
--- @return error message if invalid
+--- Validate a MIDI note number (0-127).
+-- @param note number The note number to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
 function validate_note(note)
   if type(note) ~= 'number' then
     return false, 'Note must be a number'
@@ -41,10 +56,10 @@ function validate_note(note)
   return true
 end
 
---- Validates a MIDI velocity (0-127)
--- @param velocity The velocity to validate
--- @return true if valid, false otherwise
--- @return error message if invalid
+--- Validate a MIDI velocity (0-127).
+-- @param velocity number The velocity to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
 function validate_velocity(velocity)
   if type(velocity) ~= 'number' then
     return false, 'Velocity must be a number'
@@ -58,10 +73,10 @@ function validate_velocity(velocity)
   return true
 end
 
---- Validates a MIDI controller number (0-127)
--- @param controller The controller number to validate
--- @return true if valid, false otherwise
--- @return error message if invalid
+--- Validate a MIDI controller number (0-127).
+-- @param controller number The controller number to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
 function validate_controller(controller)
   if type(controller) ~= 'number' then
     return false, 'Controller must be a number'
@@ -75,10 +90,10 @@ function validate_controller(controller)
   return true
 end
 
---- Validates a MIDI program number (0-127)
--- @param program The program number to validate
--- @return true if valid, false otherwise
--- @return error message if invalid
+--- Validate a MIDI program number (0-127).
+-- @param program number The program number to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
 function validate_program(program)
   if type(program) ~= 'number' then
     return false, 'Program must be a number'
@@ -92,10 +107,10 @@ function validate_program(program)
   return true
 end
 
---- Validates a MIDI pitch bend value (0-16383, center is 8192)
--- @param value The pitch bend value to validate
--- @return true if valid, false otherwise
--- @return error message if invalid
+--- Validate a MIDI pitch bend value (0-16383, center is 8192).
+-- @param value number The pitch bend value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
 function validate_pitch_bend(value)
   if type(value) ~= 'number' then
     return false, 'Pitch bend must be a number'
@@ -109,11 +124,11 @@ function validate_pitch_bend(value)
   return true
 end
 
---- Validates a 7-bit data value (0-127)
--- @param value The value to validate
--- @param name Optional name for error messages
--- @return true if valid, false otherwise
--- @return error message if invalid
+--- Validate a 7-bit data value (0-127).
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
 function validate_7bit(value, name)
   name = name or 'Value'
   if type(value) ~= 'number' then
@@ -128,43 +143,49 @@ function validate_7bit(value, name)
   return true
 end
 
---- Asserts that a channel is valid, throws error if not
--- @param channel The channel to validate
+--- Assert that a channel is valid, throws error if not.
+-- @param channel number The channel to validate
+-- @raise error if channel is invalid
 function assert_channel(channel)
   local valid, err = validate_channel(channel)
   if not valid then error(err, 2) end
 end
 
---- Asserts that a note is valid, throws error if not
--- @param note The note to validate
+--- Assert that a note is valid, throws error if not.
+-- @param note number The note to validate
+-- @raise error if note is invalid
 function assert_note(note)
   local valid, err = validate_note(note)
   if not valid then error(err, 2) end
 end
 
---- Asserts that a velocity is valid, throws error if not
--- @param velocity The velocity to validate
+--- Assert that a velocity is valid, throws error if not.
+-- @param velocity number The velocity to validate
+-- @raise error if velocity is invalid
 function assert_velocity(velocity)
   local valid, err = validate_velocity(velocity)
   if not valid then error(err, 2) end
 end
 
---- Asserts that a controller is valid, throws error if not
--- @param controller The controller to validate
+--- Assert that a controller is valid, throws error if not.
+-- @param controller number The controller to validate
+-- @raise error if controller is invalid
 function assert_controller(controller)
   local valid, err = validate_controller(controller)
   if not valid then error(err, 2) end
 end
 
---- Asserts that a program is valid, throws error if not
--- @param program The program to validate
+--- Assert that a program is valid, throws error if not.
+-- @param program number The program to validate
+-- @raise error if program is invalid
 function assert_program(program)
   local valid, err = validate_program(program)
   if not valid then error(err, 2) end
 end
 
---- Asserts that a pitch bend value is valid, throws error if not
--- @param value The pitch bend value to validate
+--- Assert that a pitch bend value is valid, throws error if not.
+-- @param value number The pitch bend value to validate
+-- @raise error if pitch bend value is invalid
 function assert_pitch_bend(value)
   local valid, err = validate_pitch_bend(value)
   if not valid then error(err, 2) end

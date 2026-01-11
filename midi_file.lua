@@ -1,8 +1,28 @@
--- Copyright 2024 Alexander Ames <Alexander.Ames@gmail.com>
---
+--- MIDI File Module.
 -- This module defines a `MidiFile` class for reading and writing MIDI files.
 -- A MIDI file consists of a header (format, ticks per beat) and a list of tracks.
 -- Each track contains MIDI events, such as notes, control changes, and metadata.
+--
+-- MIDI file formats:
+--
+-- * Format 0: Single track containing all MIDI data
+-- * Format 1: Multiple tracks, played synchronously (most common)
+-- * Format 2: Multiple independent patterns/sequences
+--
+-- @module midi.midi_file
+-- @copyright 2024 Alexander Ames
+-- @license MIT
+-- @usage
+-- local midi_file = require 'midi.midi_file'
+--
+-- -- Read an existing MIDI file
+-- local song = midi_file.MidiFile.read('song.mid')
+-- print(song:get_format_name())
+-- print('Tracks:', #song.tracks)
+--
+-- -- Create a new MIDI file
+-- local new_song = midi_file.MidiFile{format=1, ticks=480}
+-- new_song:write('output.mid')
 
 local llx = require 'llx'
 local midi_io = require 'midi.io'
@@ -11,14 +31,25 @@ local midi_track = require 'midi.track'
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
 
---- MidiFile class
--- @field format Format type (0, 1, or 2)
--- @field ticks Number of ticks per beat
--- @field tracks List of midi_track.Track objects
+--- MidiFile class for reading and writing Standard MIDI Files (SMF).
+-- @type MidiFile
+-- @field format number Format type (0, 1, or 2)
+-- @field ticks number|table Number of ticks per beat, or SMPTE timing table
+-- @field tracks List List of Track objects
 MidiFile = class 'MidiFile' {
-  --- Constructor
+  --- Create a new MidiFile.
   -- Accepts either positional arguments (format, ticks, tracks)
-  -- or a single table with keys {format=, ticks=, tracks=}
+  -- or a single table with keys {format=, ticks=, tracks=}.
+  -- @function MidiFile:__init
+  -- @param args_or_format number|table Either the format number (0, 1, or 2), or a table with keys
+  -- @param ticks number Number of ticks per quarter note (default 92)
+  -- @param tracks List List of Track objects (default empty)
+  -- @return MidiFile A new MidiFile instance
+  -- @usage
+  -- -- Table constructor
+  -- local midi = MidiFile{format=1, ticks=480}
+  -- -- Positional arguments
+  -- local midi = MidiFile(1, 480)
   __init = function(self, args_or_format, ticks, tracks)
     if type(args_or_format) == 'table' then
       self.format = args_or_format.format or 1
@@ -31,7 +62,9 @@ MidiFile = class 'MidiFile' {
     end
   end,
 
-  --- Check if using SMPTE time division
+  --- Check if using SMPTE time division.
+  -- SMPTE timing uses absolute time (frames) rather than musical time (beats).
+  -- @return boolean True if SMPTE timing is used
   is_smpte = function(self)
     if type(self.ticks) == 'table' and self.ticks.smpte then
       return true
@@ -41,8 +74,9 @@ MidiFile = class 'MidiFile' {
     return false
   end,
 
-  --- Get SMPTE frame rate and ticks per frame
-  -- @return frame_rate, ticks_per_frame or nil if not SMPTE
+  --- Get SMPTE frame rate and ticks per frame.
+  -- @return number|nil Frame rate (24, 25, 29.97, or 30), or nil if not SMPTE
+  -- @return number|nil Ticks per frame, or nil if not SMPTE
   get_smpte_timing = function(self)
     if type(self.ticks) == 'table' and self.ticks.smpte then
       return self.ticks.frame_rate, self.ticks.ticks_per_frame
@@ -61,9 +95,12 @@ MidiFile = class 'MidiFile' {
     return nil
   end,
 
-  --- Set SMPTE timing
-  -- @param frame_rate Frame rate (24, 25, 29.97, or 30)
-  -- @param ticks_per_frame Ticks per frame
+  --- Set SMPTE timing mode.
+  -- Configures the MIDI file to use SMPTE time division instead of musical beats.
+  -- @function MidiFile:set_smpte_timing
+  -- @param frame_rate number Frame rate (24, 25, 29.97, or 30)
+  -- @param ticks_per_frame number Ticks per frame (sub-frame resolution)
+  -- @raise error if frame_rate is invalid
   set_smpte_timing = function(self, frame_rate, ticks_per_frame)
     local frame_rate_code
     if frame_rate == 24 then
@@ -85,22 +122,30 @@ MidiFile = class 'MidiFile' {
     }
   end,
 
-  --- Check if this is format 0 (single track)
+  --- Check if this is format 0 (single track).
+  -- Format 0 files contain all MIDI data in a single track.
+  -- @return boolean True if format 0
   is_format_0 = function(self)
     return self.format == 0
   end,
 
-  --- Check if this is format 1 (multi-track synchronous)
+  --- Check if this is format 1 (multi-track synchronous).
+  -- Format 1 files have multiple tracks that play simultaneously.
+  -- This is the most common MIDI file format.
+  -- @return boolean True if format 1
   is_format_1 = function(self)
     return self.format == 1
   end,
 
-  --- Check if this is format 2 (multi-track asynchronous/pattern)
+  --- Check if this is format 2 (multi-track asynchronous/pattern).
+  -- Format 2 files contain independent patterns or sequences.
+  -- @return boolean True if format 2
   is_format_2 = function(self)
     return self.format == 2
   end,
 
-  --- Get human-readable format name
+  --- Get human-readable format name.
+  -- @return string Description of the format (e.g., "Format 1 (Multi-Track Synchronous)")
   get_format_name = function(self)
     if self.format == 0 then
       return 'Format 0 (Single Track)'
@@ -113,9 +158,10 @@ MidiFile = class 'MidiFile' {
     end
   end,
 
-  --- Validate that the MIDI file conforms to its format specification
-  -- @return true if valid, false otherwise
-  -- @return error message if invalid
+  --- Validate that the MIDI file conforms to its format specification.
+  -- Checks format number validity and track count constraints.
+  -- @return boolean True if valid, false otherwise
+  -- @return string|nil Error message if invalid
   validate_format = function(self)
     -- Validate format number
     if self.format < 0 or self.format > 2 then
@@ -140,7 +186,8 @@ MidiFile = class 'MidiFile' {
     return true
   end,
 
-  --- Assert that the MIDI file is valid, throws error if not
+  --- Assert that the MIDI file is valid, throws error if not.
+  -- @raise error if validation fails
   assert_valid_format = function(self)
     local valid, err = self:validate_format()
     if not valid then
@@ -148,9 +195,11 @@ MidiFile = class 'MidiFile' {
     end
   end,
 
-  --- Get a specific pattern/sequence (for format 2)
-  -- @param index Pattern index (1-based)
-  -- @return Track object or nil if index out of bounds
+  --- Get a specific pattern/sequence (for format 2).
+  -- @function MidiFile:get_pattern
+  -- @param index number Pattern index (1-based)
+  -- @return Track|nil Track object or nil if index out of bounds
+  -- @raise error if not a format 2 file
   get_pattern = function(self, index)
     if not self:is_format_2() then
       error('get_pattern() is only valid for Format 2 files', 2)
@@ -158,8 +207,9 @@ MidiFile = class 'MidiFile' {
     return self.tracks[index]
   end,
 
-  --- Get the number of patterns/sequences (for format 2)
-  -- @return Number of patterns
+  --- Get the number of patterns/sequences (for format 2).
+  -- @return number Number of patterns
+  -- @raise error if not a format 2 file
   get_pattern_count = function(self)
     if not self:is_format_2() then
       error('get_pattern_count() is only valid for Format 2 files', 2)
@@ -167,7 +217,10 @@ MidiFile = class 'MidiFile' {
     return #self.tracks
   end,
 
-  --- Internal function to read a MidiFile from an open file handle
+  --- Internal function to read a MidiFile from an open file handle.
+  -- @param file file File handle opened in binary read mode
+  -- @return MidiFile Parsed MIDI file
+  -- @local
   _read_file = function(file)
     local midi_file = MidiFile()
     assert(file:read(4) == 'MThd', 'Invalid MIDI file header')
@@ -203,7 +256,16 @@ MidiFile = class 'MidiFile' {
     return midi_file
   end,
 
-  --- Public function to read a MidiFile from a filename or file handle
+  --- Read a MidiFile from a filename or file handle.
+  -- @param file_or_filename string|file Either a filename string or an open file handle
+  -- @return MidiFile Parsed MIDI file
+  -- @raise error if file is invalid or cannot be read
+  -- @usage
+  -- local song = MidiFile.read('song.mid')
+  -- -- or with file handle
+  -- local f = io.open('song.mid', 'rb')
+  -- local song = MidiFile.read(f)
+  -- f:close()
   read = function(file_or_filename)
     if type(file_or_filename) == 'string' then
       local file <close> = assert(io.open(file_or_filename, 'rb'))
@@ -213,7 +275,10 @@ MidiFile = class 'MidiFile' {
     end
   end,
 
-  --- Internal function to write a MidiFile to an open file handle
+  --- Internal function to write a MidiFile to an open file handle.
+  -- @function MidiFile:_write_file
+  -- @param file file File handle opened in binary write mode
+  -- @local
   _write_file = function(self, file)
     -- Validate format before writing
     self:assert_valid_format()
@@ -237,7 +302,16 @@ MidiFile = class 'MidiFile' {
     end
   end,
 
-  --- Public function to write a MidiFile to a filename or file handle
+  --- Write a MidiFile to a filename or file handle.
+  -- @function MidiFile:write
+  -- @param file_or_filename string|file Either a filename string or an open file handle
+  -- @raise error if format validation fails
+  -- @usage
+  -- song:write('output.mid')
+  -- -- or with file handle
+  -- local f = io.open('output.mid', 'wb')
+  -- song:write(f)
+  -- f:close()
   write = function(self, file_or_filename)
     if type(file_or_filename) == 'string' then
       local file <close> = assert(io.open(file_or_filename, 'wb'))
@@ -247,7 +321,8 @@ MidiFile = class 'MidiFile' {
     end
   end,
 
-  --- Returns a human-readable representation of the MIDI file
+  --- Returns a human-readable representation of the MIDI file.
+  -- @return string String representation of the MIDI file
   __tostring = function(self)
     local tracks_strings = {}
     for i, track in ipairs(self.tracks) do
@@ -258,7 +333,9 @@ MidiFile = class 'MidiFile' {
       self.format, self.ticks, table.concat(tracks_strings, ', '))
   end,
 
-  --- Returns the binary contents of the MIDI file as a Lua string
+  --- Returns the binary contents of the MIDI file as a Lua string.
+  -- Useful for in-memory manipulation or network transmission.
+  -- @return string Binary MIDI file data
   __tobytes = function(self)
     local buffer = {}
     local file = {
@@ -269,8 +346,11 @@ MidiFile = class 'MidiFile' {
   end,
 }
 
---- Type coercion function
--- Returns a MidiFile if the object has a __tomidifile metamethod
+--- Type coercion function.
+-- Attempts to convert a value to a MidiFile using the __tomidifile metamethod.
+-- @param value any Value to convert
+-- @return MidiFile|nil MidiFile if conversion succeeds, nil otherwise
+-- @function tomidifile
 function tomidifile(value)
   local __tomidifile = llx.getmetafield(value, '__tomidifile')
   return __tomidifile and __tomidifile(value) or nil
