@@ -3,7 +3,7 @@
 
 local unit = require 'unit'
 
-local event = require 'midi.event'
+local event = require 'lua-midi.event'
 local SystemExclusiveEvent = event.SystemExclusiveEvent
 local MIDITimeCodeQuarterFrameEvent = event.MIDITimeCodeQuarterFrameEvent
 local SongPositionPointerEvent = event.SongPositionPointerEvent

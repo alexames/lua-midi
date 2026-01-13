@@ -13,7 +13,7 @@
 -- @copyright 2024 Alexander Ames
 -- @license MIT
 -- @usage
--- local midi = require 'midi'
+-- local midi = require 'lua-midi'
 --
 -- -- Read a MIDI file
 -- local song = midi.MidiFile.read('song.mid')
@@ -27,9 +27,9 @@ local llx = require 'llx'
 local lock <close> = llx.lock_global_table()
 
 return require 'llx.flatten_submodules' {
-  require 'midi.midi_file',
-  require 'midi.track',
-  require 'midi.instrument',
-  require 'midi.validation',
-  event=require 'midi.event',
+  require 'lua-midi.midi_file',
+  require 'lua-midi.track',
+  require 'lua-midi.instrument',
+  require 'lua-midi.validation',
+  event=require 'lua-midi.event',
 }

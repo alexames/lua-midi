@@ -3,8 +3,8 @@
 
 local unit = require 'unit'
 
-local Track = require 'midi.track'.Track
-local NoteBeginEvent = require 'midi.event'.NoteBeginEvent
+local Track = require 'lua-midi.track'.Track
+local NoteBeginEvent = require 'lua-midi.event'.NoteBeginEvent
 
 _ENV = unit.create_test_env(_ENV)
 
@@ -49,6 +49,4 @@ describe('TrackTests', function()
   end)
 end)
 
-if llx and llx.main_file then
-  unit.run_unit_tests()
-end
+run_unit_tests()

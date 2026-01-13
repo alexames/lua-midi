@@ -3,7 +3,7 @@
 
 local unit = require 'unit'
 
-local event = require 'midi.event'
+local event = require 'lua-midi.event'
 local NoteBeginEvent = event.NoteBeginEvent
 local NoteEndEvent = event.NoteEndEvent
 local MetaEvent = event.MetaEvent

@@ -6,7 +6,7 @@
 -- @copyright 2024 Alexander Ames
 -- @license MIT
 -- @usage
--- local midi = require 'midi'
+-- local midi = require 'lua-midi'
 --
 -- -- Use instrument names
 -- local piano = midi.instrument.acoustic_grand  -- 0

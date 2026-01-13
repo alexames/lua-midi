@@ -3,8 +3,8 @@
 
 local unit = require 'unit'
 
-local MidiFile = require 'midi.midi_file'.MidiFile
-local Track = require 'midi.track'.Track
+local MidiFile = require 'lua-midi.midi_file'.MidiFile
+local Track = require 'lua-midi.track'.Track
 
 _ENV = unit.create_test_env(_ENV)
 

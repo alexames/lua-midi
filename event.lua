@@ -25,7 +25,7 @@
 -- @copyright 2024 Alexander Ames
 -- @license MIT
 -- @usage
--- local event = require 'midi.event'
+-- local event = require 'lua-midi.event'
 --
 -- -- Create a note on event at time 0, channel 0, note 60 (C4), velocity 100
 -- local note_on = event.NoteBeginEvent(0, 0, 60, 100)
@@ -34,7 +34,7 @@
 -- local note_off = event.NoteEndEvent(480, 0, 60, 0)
 
 local llx = require 'llx'
-local midi_io = require 'midi.io'
+local midi_io = require 'lua-midi.io'
 
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
@@ -148,6 +148,7 @@ Event = class 'Event' {
     local channel = command_byte & 0x0F
     local command = command_byte & 0xF0
     local EventType = Event.types[command]
+    assert(EventType, string.format('Unknown event command: 0x%02X', command))
 
     if EventType.schema then
       -- Read arguments from file according to schema (e.g. note_number, velocity)

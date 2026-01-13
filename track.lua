@@ -8,8 +8,8 @@
 -- @copyright 2024 Alexander Ames
 -- @license MIT
 -- @usage
--- local track = require 'midi.track'
--- local event = require 'midi.event'
+-- local track = require 'lua-midi.track'
+-- local event = require 'lua-midi.event'
 --
 -- -- Create a new track with events
 -- local t = track.Track()
@@ -17,8 +17,8 @@
 -- table.insert(t.events, event.NoteEndEvent(480, 0, 60, 0))
 
 local llx = require 'llx'
-local midi_io = require 'midi.io'
-local midi_event = require 'midi.event'
+local midi_io = require 'lua-midi.io'
+local midi_event = require 'lua-midi.event'
 
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
@@ -44,7 +44,7 @@ Track = class 'Track' {
     local length = 0
     local previous_command_byte = 0
 
-    for i, event in self.events do
+    for i, event in ipairs(self.events) do
       -- Account for the size of the delta time (variable length quantity)
       local time_delta = event.time_delta
       if time_delta > (0x7F * 0x7F * 0x7F) then

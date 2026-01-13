@@ -9,7 +9,7 @@
 -- @copyright 2024 Alexander Ames
 -- @license MIT
 -- @usage
--- local validation = require 'midi.validation'
+-- local validation = require 'lua-midi.validation'
 --
 -- -- Validate values
 -- local ok, err = validation.validate_channel(16)  -- false, "Channel must be 0-15, got 16"

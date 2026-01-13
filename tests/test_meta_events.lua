@@ -3,7 +3,7 @@
 
 local unit = require 'unit'
 
-local event = require 'midi.event'
+local event = require 'lua-midi.event'
 local SetTempoEvent = event.SetTempoEvent
 local TimeSignatureEvent = event.TimeSignatureEvent
 local KeySignatureEvent = event.KeySignatureEvent

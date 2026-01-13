@@ -3,7 +3,7 @@
 
 local unit = require 'unit'
 
-local validation = require 'midi.validation'
+local validation = require 'lua-midi.validation'
 
 _ENV = unit.create_test_env(_ENV)
 

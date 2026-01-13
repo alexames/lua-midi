@@ -3,7 +3,7 @@
 
 local unit = require 'unit'
 
-local io_util = require 'midi.io'
+local io_util = require 'lua-midi.io'
 
 _ENV = unit.create_test_env(_ENV)
 
@@ -53,3 +53,5 @@ describe('MidiIoTests', function()
     expect(read).to.be_equal_to(0x7F)
   end)
 end)
+
+run_unit_tests()

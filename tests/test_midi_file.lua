@@ -3,7 +3,7 @@
 
 local unit = require 'unit'
 
-local MidiFile = require 'midi.midi_file'.MidiFile
+local MidiFile = require 'lua-midi.midi_file'.MidiFile
 
 _ENV = unit.create_test_env(_ENV)
 
@@ -68,3 +68,5 @@ describe('MidiFileTests', function()
     expect(#bin > 6).to.be_truthy()  -- Should at least include the MIDI header
   end)
 end)
+
+run_unit_tests()

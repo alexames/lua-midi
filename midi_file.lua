@@ -13,7 +13,7 @@
 -- @copyright 2024 Alexander Ames
 -- @license MIT
 -- @usage
--- local midi_file = require 'midi.midi_file'
+-- local midi_file = require 'lua-midi.midi_file'
 --
 -- -- Read an existing MIDI file
 -- local song = midi_file.MidiFile.read('song.mid')
@@ -25,8 +25,8 @@
 -- new_song:write('output.mid')
 
 local llx = require 'llx'
-local midi_io = require 'midi.io'
-local midi_track = require 'midi.track'
+local midi_io = require 'lua-midi.io'
+local midi_track = require 'lua-midi.track'
 
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
