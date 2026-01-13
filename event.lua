@@ -121,7 +121,13 @@ Event = class 'Event' {
     local command_byte = midi_io.readUInt8be(file)
     local event_byte = nil
 
-    -- Handle System messages (0xF0-0xFF) - these don't use running status
+    -- Handle 0xFF (Meta Event) - special case for MIDI files
+    -- In MIDI files, 0xFF indicates a meta event, not system reset
+    if command_byte == 0xFF then
+      return MetaEvent.read(file, time_delta, 0x0F, context)
+    end
+
+    -- Handle System messages (0xF0-0xFE) - these don't use running status
     if command_byte >= 0xF0 then
       local SystemEventType = Event.system_types[command_byte]
       if SystemEventType then
@@ -1000,6 +1006,9 @@ for _, v in ipairs(meta_event_type_list) do
 end
 
 -- Register System Common and System Real-Time messages
+-- NOTE: 0xFF is intentionally NOT registered here. In MIDI files, 0xFF indicates
+-- a meta event, not a system reset. System reset (0xFF) only exists in real-time
+-- MIDI streams. Meta events are handled via Event.types[0xF0] -> MetaEvent.
 local system_event_types = {}
 Event.system_types = system_event_types
 system_event_types[0xF0] = SystemExclusiveEvent
@@ -1012,7 +1021,7 @@ system_event_types[0xFA] = StartEvent
 system_event_types[0xFB] = ContinueEvent
 system_event_types[0xFC] = StopEvent
 system_event_types[0xFE] = ActiveSensingEvent
-system_event_types[0xFF] = SystemResetEvent
+-- system_event_types[0xFF] is NOT set - 0xFF in MIDI files is a meta event prefix
 
 return _M
 
