@@ -1,7 +1,7 @@
 -- test_event.lua
 -- Unit tests for midi.event module
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local event = require 'lua-midi.event'
 local NoteBeginEvent = event.NoteBeginEvent

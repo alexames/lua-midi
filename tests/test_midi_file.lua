@@ -1,7 +1,7 @@
 -- test_midi_file.lua
 -- Unit tests for midi.midi_file
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local MidiFile = require 'lua-midi.midi_file'.MidiFile
 

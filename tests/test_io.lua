@@ -1,7 +1,7 @@
 -- test_io.lua
 -- Unit tests for midi.io (binary I/O operations)
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local io_util = require 'lua-midi.io'
 

@@ -1,7 +1,7 @@
 -- test_track.lua
 -- Unit tests for midi.track
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local Track = require 'lua-midi.track'.Track
 local NoteBeginEvent = require 'lua-midi.event'.NoteBeginEvent

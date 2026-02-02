@@ -1,7 +1,7 @@
 -- test_system_messages.lua
 -- Unit tests for System Common and System Real-Time messages
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local event = require 'lua-midi.event'
 local SystemExclusiveEvent = event.SystemExclusiveEvent

@@ -1,7 +1,7 @@
 -- test_meta_events.lua
 -- Unit tests for structured meta event parsing
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local event = require 'lua-midi.event'
 local SetTempoEvent = event.SetTempoEvent

@@ -1,7 +1,7 @@
 -- test_format_validation.lua
 -- Unit tests for MIDI format validation
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local MidiFile = require 'lua-midi.midi_file'.MidiFile
 local Track = require 'lua-midi.track'.Track

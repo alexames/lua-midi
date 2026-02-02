@@ -1,7 +1,7 @@
 -- test_smpte.lua
 -- Unit tests for SMPTE time division support
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local MidiFile = require 'lua-midi.midi_file'.MidiFile
 

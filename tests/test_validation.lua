@@ -1,7 +1,7 @@
 -- test_validation.lua
 -- Unit tests for MIDI validation utilities
 
-local unit = require 'unit'
+local unit = require 'llx.unit'
 
 local validation = require 'lua-midi.validation'
 
