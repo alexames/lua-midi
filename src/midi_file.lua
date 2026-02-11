@@ -328,9 +328,16 @@ MidiFile = class 'MidiFile' {
     for i, track in ipairs(self.tracks) do
       tracks_strings[i] = tostring(track)
     end
+    local ticks_str
+    if type(self.ticks) == 'table' and self.ticks.smpte then
+      ticks_str = string.format('SMPTE(%g fps, %d tpf)',
+                                self.ticks.frame_rate, self.ticks.ticks_per_frame)
+    else
+      ticks_str = tostring(self.ticks)
+    end
     return string.format(
-      'MidiFile{format=%d, ticks=%d, tracks={%s}}',
-      self.format, self.ticks, table.concat(tracks_strings, ', '))
+      'MidiFile{format=%d, ticks=%s, tracks={%s}}',
+      self.format, ticks_str, table.concat(tracks_strings, ', '))
   end,
 
   --- Returns the binary contents of the MIDI file as a Lua string.

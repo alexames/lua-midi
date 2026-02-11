@@ -67,6 +67,15 @@ describe('MidiFileTests', function()
     local bin = mf:__tobytes()
     expect(#bin > 6).to.be_truthy()  -- Should at least include the MIDI header
   end)
+
+  it('should not crash tostring for SMPTE timing', function()
+    local mf = MidiFile(1, 96)
+    mf:set_smpte_timing(25, 40)
+    local str = tostring(mf)
+    expect(str:match('MidiFile')).to.be_truthy()
+    expect(str:match('SMPTE')).to.be_truthy()
+    expect(str:match('25')).to.be_truthy()
+  end)
 end)
 
 run_unit_tests()
