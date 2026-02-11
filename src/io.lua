@@ -16,6 +16,7 @@ local _ENV, _M = llx.environment.create_module_environment()
 -- @param file file An open file handle for writing
 -- @param i number The integer to write (0 <= i <= 0xFFFFFFFF)
 function writeUInt32be(file, i)
+  assert(i >= 0 and i <= 0xFFFFFFFF, 'writeUInt32be: value out of range')
   file:write(
     string.char(
       (i >> 24) & 0xFF,
@@ -28,6 +29,7 @@ end
 -- @param file file An open file handle for writing
 -- @param i number The integer to write (0 <= i <= 0xFFFF)
 function writeUInt16be(file, i)
+  assert(i >= 0 and i <= 0xFFFF, 'writeUInt16be: value out of range')
   file:write(
     string.char(
       (i >> 8) & 0xFF,
@@ -38,6 +40,7 @@ end
 -- @param file file An open file handle for writing
 -- @param i number The integer to write (0 <= i <= 0xFF)
 function writeUInt8be(file, i)
+  assert(i >= 0 and i <= 0xFF, 'writeUInt8be: value out of range')
   file:write(
     string.char(
       (i >> 0) & 0xFF))  -- Single byte
@@ -94,6 +97,7 @@ end
 -- @param file file An open file handle for writing
 -- @param i number The value to write (0 <= i <= 16383)
 function writeUInt14le(file, i)
+  assert(i >= 0 and i <= 0x3FFF, 'writeUInt14le: value out of range')
   writeUInt8be(file, i & 0x7F)
   writeUInt8be(file, (i >> 7) & 0x7F)
 end

@@ -111,4 +111,70 @@ describe('MidiIoTests', function()
   end)
 end)
 
+describe('WriteRangeValidationTests', function()
+  local function null_file()
+    return { write = function() end }
+  end
+
+  it('should reject writeUInt8be with value > 255', function()
+    local ok = pcall(io_util.writeUInt8be, null_file(), 256)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject writeUInt8be with negative value', function()
+    local ok = pcall(io_util.writeUInt8be, null_file(), -1)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept writeUInt8be at boundaries', function()
+    io_util.writeUInt8be(null_file(), 0)
+    io_util.writeUInt8be(null_file(), 255)
+  end)
+
+  it('should reject writeUInt16be with value > 65535', function()
+    local ok = pcall(io_util.writeUInt16be, null_file(), 65536)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject writeUInt16be with negative value', function()
+    local ok = pcall(io_util.writeUInt16be, null_file(), -1)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept writeUInt16be at boundaries', function()
+    io_util.writeUInt16be(null_file(), 0)
+    io_util.writeUInt16be(null_file(), 65535)
+  end)
+
+  it('should reject writeUInt32be with value > 0xFFFFFFFF', function()
+    local ok = pcall(io_util.writeUInt32be, null_file(), 0x100000000)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject writeUInt32be with negative value', function()
+    local ok = pcall(io_util.writeUInt32be, null_file(), -1)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept writeUInt32be at boundaries', function()
+    io_util.writeUInt32be(null_file(), 0)
+    io_util.writeUInt32be(null_file(), 0xFFFFFFFF)
+  end)
+
+  it('should reject writeUInt14le with value > 16383', function()
+    local ok = pcall(io_util.writeUInt14le, null_file(), 16384)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject writeUInt14le with negative value', function()
+    local ok = pcall(io_util.writeUInt14le, null_file(), -1)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept writeUInt14le at boundaries', function()
+    io_util.writeUInt14le(null_file(), 0)
+    io_util.writeUInt14le(null_file(), 16383)
+  end)
+end)
+
 run_unit_tests()
