@@ -43,11 +43,28 @@ function writeUInt8be(file, i)
       (i >> 0) & 0xFF))  -- Single byte
 end
 
+--- Read exactly n bytes from a file, or error on short/EOF read.
+-- @param file file An open file handle for reading
+-- @param n number The number of bytes to read
+-- @return string The bytes read
+-- @raise error if fewer than n bytes are available
+-- @local
+local function _read_bytes(file, n)
+  local bytes = file:read(n)
+  if not bytes or #bytes ~= n then
+    error(string.format(
+      'Unexpected end of MIDI data (wanted %d bytes, got %d)',
+      n, bytes and #bytes or 0), 3)
+  end
+  return bytes
+end
+
 --- Read a 32-bit unsigned integer from a file in big-endian byte order.
 -- @param file file An open file handle for reading
 -- @return number The 32-bit integer value
+-- @raise error on unexpected EOF
 function readUInt32be(file)
-  local a, b, c, d = file:read(4):byte(1, 4)
+  local a, b, c, d = _read_bytes(file, 4):byte(1, 4)
   return (a << 24)
        | (b << 16)
        | (c << 8)
@@ -57,8 +74,9 @@ end
 --- Read a 16-bit unsigned integer from a file in big-endian byte order.
 -- @param file file An open file handle for reading
 -- @return number The 16-bit integer value
+-- @raise error on unexpected EOF
 function readUInt16be(file)
-  local a, b = file:read(2):byte(1, 2)
+  local a, b = _read_bytes(file, 2):byte(1, 2)
   return (a << 8)
        | (b << 0)
 end
@@ -66,8 +84,9 @@ end
 --- Read an 8-bit unsigned integer from a file.
 -- @param file file An open file handle for reading
 -- @return number The 8-bit integer value
+-- @raise error on unexpected EOF
 function readUInt8be(file)
-  return file:read(1):byte(1)
+  return _read_bytes(file, 1):byte(1)
 end
 
 return _M

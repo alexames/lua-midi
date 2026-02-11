@@ -52,6 +52,27 @@ describe('MidiIoTests', function()
     local read = io_util.readUInt8be(fake_file)
     expect(read).to.be_equal_to(0x7F)
   end)
+
+  it('should error on EOF when reading UInt32be', function()
+    local fake_file = { read = function() return nil end }
+    local ok, err = pcall(io_util.readUInt32be, fake_file)
+    expect(ok).to.be_falsy()
+    expect(tostring(err):match('Unexpected end of MIDI data')).to.be_truthy()
+  end)
+
+  it('should error on short read for UInt16be', function()
+    local fake_file = { read = function() return '\x00' end }
+    local ok, err = pcall(io_util.readUInt16be, fake_file)
+    expect(ok).to.be_falsy()
+    expect(tostring(err):match('Unexpected end of MIDI data')).to.be_truthy()
+  end)
+
+  it('should error on EOF when reading UInt8be', function()
+    local fake_file = { read = function() return nil end }
+    local ok, err = pcall(io_util.readUInt8be, fake_file)
+    expect(ok).to.be_falsy()
+    expect(tostring(err):match('Unexpected end of MIDI data')).to.be_truthy()
+  end)
 end)
 
 run_unit_tests()
