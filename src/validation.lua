@@ -43,6 +43,15 @@ local function _validate_integer_range(value, name, min, max)
   return true
 end
 
+--- Validate a MIDI event time delta.
+-- Time deltas must be non-negative integers that fit in VLQ encoding (0-268435455).
+-- @param time_delta number The time delta to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_time_delta(time_delta)
+  return _validate_integer_range(time_delta, 'Time delta', 0, 0x0FFFFFFF)
+end
+
 --- Validate a MIDI channel number (0-15).
 -- @param channel number The channel number to validate
 -- @return boolean True if valid, false otherwise
@@ -98,6 +107,14 @@ end
 -- @return string|nil Error message if invalid
 function validate_7bit(value, name)
   return _validate_integer_range(value, name or 'Value', 0, 127)
+end
+
+--- Assert that a time delta is valid, throws error if not.
+-- @param time_delta number The time delta to validate
+-- @raise error if time delta is invalid
+function assert_time_delta(time_delta)
+  local valid, err = validate_time_delta(time_delta)
+  if not valid then error(err, 2) end
 end
 
 --- Assert that a channel is valid, throws error if not.

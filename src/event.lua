@@ -48,6 +48,7 @@ TimedEvent = class 'TimedEvent' {
   -- @function TimedEvent:__init
   -- @param time_delta number Delta time in ticks since the previous event
   __init = function(self, time_delta)
+    validation.assert_time_delta(time_delta)
     self.time_delta = time_delta
   end,
 

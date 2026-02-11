@@ -449,6 +449,25 @@ describe('ConstructorValidationTests', function()
     NoteBeginEvent(0, 0, 0, 0)
     NoteBeginEvent(0, 15, 127, 127)
   end)
+
+  it('should reject negative time delta', function()
+    local ok = pcall(function() NoteBeginEvent(-1, 0, 60, 100) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject non-integer time delta', function()
+    local ok = pcall(function() NoteBeginEvent(1.5, 0, 60, 100) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject time delta exceeding VLQ max', function()
+    local ok = pcall(function() NoteBeginEvent(0x10000000, 0, 60, 100) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept time delta at VLQ max boundary', function()
+    NoteBeginEvent(0x0FFFFFFF, 0, 60, 100)
+  end)
 end)
 
 run_unit_tests()

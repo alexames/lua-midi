@@ -57,6 +57,30 @@ describe('ValidationTests', function()
     expect(err:match('integer')).to.be_truthy()
   end)
 
+  it('should accept time delta 0 as valid', function()
+    expect(validation.validate_time_delta(0)).to.be_truthy()
+  end)
+
+  it('should accept time delta at VLQ max as valid', function()
+    expect(validation.validate_time_delta(0x0FFFFFFF)).to.be_truthy()
+  end)
+
+  it('should reject negative time delta', function()
+    local valid, err = validation.validate_time_delta(-1)
+    expect(valid).to.be_falsy()
+  end)
+
+  it('should reject time delta exceeding VLQ max', function()
+    local valid, err = validation.validate_time_delta(0x10000000)
+    expect(valid).to.be_falsy()
+  end)
+
+  it('should reject non-integer time delta', function()
+    local valid, err = validation.validate_time_delta(1.5)
+    expect(valid).to.be_falsy()
+    expect(err:match('integer')).to.be_truthy()
+  end)
+
   it('should accept note 0 as valid', function()
     expect(validation.validate_note(0)).to.be_truthy()
   end)
