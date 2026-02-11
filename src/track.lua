@@ -94,6 +94,7 @@ Track = class 'Track' {
   -- @param other Track The track to compare with
   -- @return boolean True if equal
   __eq = function(self, other)
+    if self.class ~= other.class then return false end
     if #self.events ~= #other.events then return false end
     for i = 1, #self.events do
       if self.events[i] ~= other.events[i] then return false end

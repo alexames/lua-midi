@@ -347,6 +347,7 @@ MidiFile = class 'MidiFile' {
   -- @param other MidiFile The MIDI file to compare with
   -- @return boolean True if equal
   __eq = function(self, other)
+    if self.class ~= other.class then return false end
     if self.format ~= other.format then return false end
     -- Compare ticks (handle SMPTE table case)
     if type(self.ticks) ~= type(other.ticks) then return false end
