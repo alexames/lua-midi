@@ -91,7 +91,7 @@ Track = class 'Track' {
     midi_io.writeUInt32be(file, self:_get_track_byte_length())
 
     local context = _new_context()
-    for i, event in ipairs(self.events) do
+    for _, event in ipairs(self.events) do
       event:write(file, context)
     end
   end,
