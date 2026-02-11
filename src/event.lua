@@ -647,7 +647,8 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
   -- @return MetaEvent The parsed meta event
   read = function(file, time_delta, channel, context)
     local meta_command = midi_io.readUInt8be(file)
-    local length = midi_io.readUInt8be(file)
+    -- Meta event data length is a variable-length quantity per the MIDI spec
+    local length = TimedEvent._read_event_time(file)
     local data = {}
     for i = 1, length do
       table.insert(data, midi_io.readUInt8be(file))
@@ -665,14 +666,15 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     self.Event.write(self, file, context)
     midi_io.writeUInt8be(file, self.meta_command)
     local data = self.data
-    midi_io.writeUInt8be(file, #data)
+    -- Meta event data length is a variable-length quantity per the MIDI spec
+    TimedEvent._write_event_time(file, #data)
     for i=1, #data do
       midi_io.writeUInt8be(file, data[i])
     end
   end,
 
   _byte_length = function(self, context)
-    -- VLQ time delta + command byte (always written for meta) + meta_command + length byte + data
+    -- VLQ time delta + command byte (always written for meta) + meta_command + VLQ length + data
     local length = TimedEvent._vlq_byte_length(self.time_delta)
     local command_byte = self.command | self.channel
     if command_byte ~= context.previous_command_byte
@@ -680,7 +682,8 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
       length = length + 1
       context.previous_command_byte = command_byte
     end
-    length = length + 2 + #self.data  -- meta_command + length byte + data bytes
+    -- meta_command byte + VLQ-encoded data length + data bytes
+    length = length + 1 + TimedEvent._vlq_byte_length(#self.data) + #self.data
     return length
   end,
 
