@@ -23,6 +23,12 @@ local midi_event = require 'lua-midi.event'
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
 
+--- Create a fresh running-status context for reading or writing events.
+-- @local
+local function _new_context()
+  return { previous_command_byte = 0 }
+end
+
 --- Track class representing a single MIDI track.
 -- A track contains a list of MIDI events with delta times.
 -- @type Track
@@ -43,7 +49,7 @@ Track = class 'Track' {
   -- @local
   _get_track_byte_length = function(self)
     local writer = midi_io.counting_writer()
-    local context = { previous_command_byte = 0 }
+    local context = _new_context()
     for _, event in ipairs(self.events) do
       event:write(writer, context)
     end
@@ -60,7 +66,7 @@ Track = class 'Track' {
     assert(file:read(4) == 'MTrk', "Expected 'MTrk' chunk")
 
     local track_byte_length = midi_io.readUInt32be(file)
-    local context = { previous_command_byte = 0 }
+    local context = _new_context()
     local end_of_track = file:seek() + track_byte_length
 
     -- Read events until the declared byte length is consumed
@@ -84,7 +90,7 @@ Track = class 'Track' {
     file:write('MTrk')
     midi_io.writeUInt32be(file, self:_get_track_byte_length())
 
-    local context = { previous_command_byte = 0 }
+    local context = _new_context()
     for i, event in ipairs(self.events) do
       event:write(file, context)
     end
