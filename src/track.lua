@@ -37,16 +37,17 @@ Track = class 'Track' {
   end,
 
   --- Calculate the total byte length of the track (excluding 'MTrk' and length field).
-  -- This is needed for writing the track to a MIDI file.
+  -- Uses a counting writer to measure the exact serialized size, ensuring the
+  -- length calculation stays in sync with the write implementation.
   -- @return number Byte length of the track data
   -- @local
   _get_track_byte_length = function(self)
-    local length = 0
+    local writer = midi_io.counting_writer()
     local context = { previous_command_byte = 0 }
     for _, event in ipairs(self.events) do
-      length = length + event:_byte_length(context)
+      event:write(writer, context)
     end
-    return length
+    return writer.count
   end,
 
   --- Read a Track from the given file handle.

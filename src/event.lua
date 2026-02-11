@@ -98,18 +98,6 @@ TimedEvent = class 'TimedEvent' {
     midi_io.writeUInt8be(file, time_delta & 0x7F)
   end,
 
-  --- Calculate the byte length of a VLQ-encoded value.
-  -- @param value number The value to encode
-  -- @return number Byte length (1-4)
-  -- @local
-  _vlq_byte_length = function(value)
-    if value > 0x1FFFFF then return 4
-    elseif value > 0x3FFF then return 3
-    elseif value > 0x7F then return 2
-    else return 1
-    end
-  end,
-
   --- Read an event from file (placeholder for derived classes).
   -- @param file file Binary input file handle
   -- @local
@@ -212,24 +200,6 @@ Event = class 'Event' {
         midi_io.writeUInt8be(file, byte)
       end
     end
-  end,
-
-  --- Calculate the byte length of this event when serialized.
-  -- Accounts for VLQ time delta, running status, and schema data bytes.
-  -- @param context table Context with previous_command_byte for running status
-  -- @return number Byte length of the serialized event
-  _byte_length = function(self, context)
-    local length = TimedEvent._vlq_byte_length(self.time_delta)
-    local command_byte = self.command | self.channel
-    if command_byte ~= context.previous_command_byte
-       or self.command == 0xF0 then
-      length = length + 1
-      context.previous_command_byte = command_byte
-    end
-    if self.schema then
-      length = length + #self.schema
-    end
-    return length
   end,
 
   --- Equality comparison for channel voice events.
@@ -460,16 +430,6 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
     midi_io.writeUInt8be(file, (self.value >> 7) & 0x7F)
   end,
 
-  _byte_length = function(self, context)
-    local length = TimedEvent._vlq_byte_length(self.time_delta)
-    local command_byte = self.command | self.channel
-    if command_byte ~= context.previous_command_byte then
-      length = length + 1
-      context.previous_command_byte = command_byte
-    end
-    return length + 2
-  end,
-
   __eq = function(self, other)
     if self.class ~= other.class then return false end
     if self.time_delta ~= other.time_delta then return false end
@@ -529,11 +489,6 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
     midi_io.writeUInt8be(file, 0xF7)
   end,
 
-  _byte_length = function(self, context)
-    -- VLQ time delta + 0xF0 start byte + data bytes + 0xF7 end byte
-    return TimedEvent._vlq_byte_length(self.time_delta) + 1 + #self.data + 1
-  end,
-
   __eq = function(self, other)
     if self.class ~= other.class then return false end
     if self.time_delta ~= other.time_delta then return false end
@@ -582,11 +537,6 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
     midi_io.writeUInt8be(file, data)
   end,
 
-  _byte_length = function(self, context)
-    -- VLQ time delta + status byte + data byte
-    return TimedEvent._vlq_byte_length(self.time_delta) + 2
-  end,
-
   __eq = function(self, other)
     return self.class == other.class
        and self.time_delta == other.time_delta
@@ -630,11 +580,6 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
     midi_io.writeUInt8be(file, (self.position >> 7) & 0x7F)
   end,
 
-  _byte_length = function(self, context)
-    -- VLQ time delta + status byte + LSB + MSB
-    return TimedEvent._vlq_byte_length(self.time_delta) + 3
-  end,
-
   __eq = function(self, other)
     return self.class == other.class
        and self.time_delta == other.time_delta
@@ -673,11 +618,6 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
     midi_io.writeUInt8be(file, self.song_number)
   end,
 
-  _byte_length = function(self, context)
-    -- VLQ time delta + status byte + song number byte
-    return TimedEvent._vlq_byte_length(self.time_delta) + 2
-  end,
-
   __eq = function(self, other)
     return self.class == other.class
        and self.time_delta == other.time_delta
@@ -712,11 +652,6 @@ local function _simple_system_event(name, status_byte)
     write = function(self, file)
       TimedEvent._write_event_time(file, self.time_delta)
       midi_io.writeUInt8be(file, status_byte)
-    end,
-
-    _byte_length = function(self, context)
-      -- VLQ time delta + status byte
-      return TimedEvent._vlq_byte_length(self.time_delta) + 1
     end,
 
     __eq = function(self, other)
@@ -836,21 +771,6 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     for i=1, #data do
       midi_io.writeUInt8be(file, data[i])
     end
-  end,
-
-  _byte_length = function(self, context)
-    -- VLQ time delta + command byte (always written for meta) + meta_command + VLQ length + data
-    local length = TimedEvent._vlq_byte_length(self.time_delta)
-    local command_byte = self.command | self.channel
-    if command_byte ~= context.previous_command_byte
-       or self.command == 0xF0 then
-      length = length + 1
-      context.previous_command_byte = command_byte
-    end
-    local data = self:_get_data()
-    -- meta_command byte + VLQ-encoded data length + data bytes
-    length = length + 1 + TimedEvent._vlq_byte_length(#data) + #data
-    return length
   end,
 
   __eq = function(self, other)

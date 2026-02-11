@@ -89,4 +89,16 @@ function readUInt8be(file)
   return _read_bytes(file, 1):byte(1)
 end
 
+--- Create a counting writer that tallies bytes written without storing them.
+-- The returned object has a file-like `write` method and a `count` field.
+-- @return table A counting writer with write(self, s) and count fields
+function counting_writer()
+  return {
+    count = 0,
+    write = function(self, s)
+      self.count = self.count + #s
+    end,
+  }
+end
+
 return _M
