@@ -427,12 +427,7 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
   end,
 
   write = function(self, file, context)
-    TimedEvent._write_event_time(file, self.time_delta)
-    local command_byte = self.command | self.channel
-    if command_byte ~= context.previous_command_byte then
-      midi_io.writeUInt8be(file, command_byte)
-      context.previous_command_byte = command_byte
-    end
+    self.Event.write(self, file, context)
     midi_io.writeUInt14le(file, self.value)
   end,
 
