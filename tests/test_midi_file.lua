@@ -107,13 +107,13 @@ describe('MidiFileEqualityTests', function()
     table.insert(a.tracks, Track {
       NoteBeginEvent(0, 0, 60, 100),
       NoteEndEvent(96, 0, 60, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     })
     local b = MidiFile(1, 96)
     table.insert(b.tracks, Track {
       NoteBeginEvent(0, 0, 60, 100),
       NoteEndEvent(96, 0, 60, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     })
     expect(a == b).to.be_truthy()
   end)
@@ -173,7 +173,7 @@ describe('MidiFileEqualityTests', function()
     table.insert(original.tracks, Track {
       NoteBeginEvent(0, 0, 60, 100),
       NoteEndEvent(96, 0, 60, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     })
 
     local bytes = original:__tobytes()

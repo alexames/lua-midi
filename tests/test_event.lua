@@ -30,19 +30,19 @@ describe('EventTests', function()
   end)
 
   it('should convert meta event to string correctly', function()
-    local e = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
-    expect(tostring(e)).to.be_equal_to('SetTempoEvent(0, 15, 7, 161, 32)')
+    local e = SetTempoEvent(0, {0x07, 0xA1, 0x20})
+    expect(tostring(e)).to.be_equal_to('SetTempoEvent(0, 7, 161, 32)')
   end)
 
   it('should write correct bytes for SetTempoEvent', function()
     local buffer = {}
     local file = { write = function(_, x) table.insert(buffer, x) end }
-    local e = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    local e = SetTempoEvent(0, {0x07, 0xA1, 0x20})
     e:write(file, { previous_command_byte = 0 })
     local output = table.concat(buffer)
-    -- Expected: delta(0x00), command(0xF0|0x0F=0xFF), meta_command(0x51), length(3), data(0x07, 0xA1, 0x20)
+    -- Expected: delta(0x00), command(0xFF), meta_command(0x51), length(3), data(0x07, 0xA1, 0x20)
     expect(output:byte(1)).to.be_equal_to(0x00)   -- delta time
-    expect(output:byte(2)).to.be_equal_to(0xFF)    -- command byte (0xF0 | 0x0F)
+    expect(output:byte(2)).to.be_equal_to(0xFF)    -- command byte
     expect(output:byte(3)).to.be_equal_to(0x51)    -- meta command (set tempo)
     expect(output:byte(4)).to.be_equal_to(3)       -- data length
     expect(output:byte(5)).to.be_equal_to(0x07)    -- data byte 1
@@ -185,7 +185,7 @@ describe('RoundTripTests', function()
     local track = Track {
       NoteBeginEvent(0, 0, 60, 100),
       NoteEndEvent(96, 0, 60, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     }
     table.insert(mf.tracks, track)
 
@@ -216,13 +216,13 @@ describe('RoundTripTests', function()
 
   it('should round-trip a format 0 MIDI file with tempo and time signature', function()
     local mf = MidiFile{format = 0, ticks = 480}
-    local tempo = SetTempoEvent(0, 0x0F, {})
+    local tempo = SetTempoEvent(0, {})
     tempo:set_tempo(500000)  -- 120 BPM
     local track = Track {
       tempo,
       NoteBeginEvent(0, 0, 64, 80),
       NoteEndEvent(480, 0, 64, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     }
     table.insert(mf.tracks, track)
 
@@ -249,7 +249,7 @@ describe('LargeDeltaTimeRoundTripTests', function()
     local track = Track {
       NoteBeginEvent(0, 0, 60, 100),
       NoteEndEvent(16384, 0, 60, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     }
     table.insert(mf.tracks, track)
 
@@ -269,7 +269,7 @@ describe('LargeDeltaTimeRoundTripTests', function()
     local track = Track {
       NoteBeginEvent(0, 0, 60, 100),
       NoteEndEvent(2097152, 0, 60, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     }
     table.insert(mf.tracks, track)
 
@@ -305,20 +305,20 @@ describe('EqualityTests', function()
   end)
 
   it('should consider identical SetTempoEvents equal', function()
-    local a = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
-    local b = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    local a = SetTempoEvent(0, {0x07, 0xA1, 0x20})
+    local b = SetTempoEvent(0, {0x07, 0xA1, 0x20})
     expect(a == b).to.be_truthy()
   end)
 
   it('should consider SetTempoEvents with different data unequal', function()
-    local a = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
-    local b = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x21})
+    local a = SetTempoEvent(0, {0x07, 0xA1, 0x20})
+    local b = SetTempoEvent(0, {0x07, 0xA1, 0x21})
     expect(a == b).to.be_falsy()
   end)
 
   it('should consider identical EndOfTrackEvents equal', function()
-    local a = EndOfTrackEvent(0, 0x0F, {})
-    local b = EndOfTrackEvent(0, 0x0F, {})
+    local a = EndOfTrackEvent(0, {})
+    local b = EndOfTrackEvent(0, {})
     expect(a == b).to.be_truthy()
   end)
 
@@ -339,7 +339,7 @@ describe('EqualityTests', function()
     local original_events = {
       NoteBeginEvent(0, 0, 60, 100),
       NoteEndEvent(96, 0, 60, 0),
-      EndOfTrackEvent(0, 0x0F, {}),
+      EndOfTrackEvent(0, {}),
     }
     local track = Track(original_events)
     table.insert(mf.tracks, track)
@@ -495,14 +495,14 @@ describe('CloneTests', function()
   end)
 
   it('should clone a SetTempoEvent with equal values', function()
-    local original = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    local original = SetTempoEvent(0, {0x07, 0xA1, 0x20})
     local copy = original:clone()
     expect(copy == original).to.be_truthy()
     expect(copy.tempo).to.be_equal_to(original.tempo)
   end)
 
   it('should produce an independent SetTempoEvent clone', function()
-    local original = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    local original = SetTempoEvent(0, {0x07, 0xA1, 0x20})
     local copy = original:clone()
     copy:set_tempo(1000000)
     expect(original.tempo).to.be_equal_to(500000)

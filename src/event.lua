@@ -143,7 +143,7 @@ Event = class 'Event' {
     -- Handle 0xFF (Meta Event) - special case for MIDI files
     -- In MIDI files, 0xFF indicates a meta event, not system reset
     if command_byte == 0xFF then
-      return MetaEvent.read(file, time_delta, 0x0F, context)
+      return MetaEvent.read(file, time_delta)
     end
 
     -- Handle System messages (0xF0-0xFE) - these don't use running status
@@ -699,18 +699,15 @@ SystemResetEvent = _simple_system_event('SystemResetEvent', 0xFF)
 -- They are only meaningful within MIDI files, not for real-time playback.
 -- @type MetaEvent
 -- @field time_delta number Delta time in ticks
--- @field channel number Always 0x0F for meta events
 -- @field data table Event-specific data bytes
 -- @field meta_command number Meta event type identifier
-MetaEvent = class 'MetaEvent' : extends(Event) {
+MetaEvent = class 'MetaEvent' : extends(TimedEvent) {
   --- Create a new MetaEvent.
   -- @function MetaEvent:__init
   -- @param time_delta number Delta time in ticks
-  -- @param channel number Must be 0x0F
   -- @param data table Event data bytes
-  __init = function(self, time_delta, channel, data)
-    assert(channel == 0x0F)
-    self.Event.__init(self, time_delta, channel)
+  __init = function(self, time_delta, data)
+    TimedEvent.__init(self, time_delta)
     self.data = {table.unpack(data)}
   end,
 
@@ -725,10 +722,8 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
   --- Read a meta event from file.
   -- @param file file Binary input file handle
   -- @param time_delta number Delta time already read
-  -- @param channel number Channel (should be 0x0F)
-  -- @param context table Read context
   -- @return MetaEvent The parsed meta event
-  read = function(file, time_delta, channel, context)
+  read = function(file, time_delta)
     local meta_command = midi_io.readUInt8be(file)
     -- Meta event data length is a variable-length quantity per the MIDI spec
     local length = TimedEvent._read_event_time(file)
@@ -738,15 +733,16 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     end
     local meta_event = MetaEvent.types[meta_command]
     assert(meta_event, string.format('Meta event %02X not recognized', meta_command))
-    return meta_event(time_delta, channel, data)
+    return meta_event(time_delta, data)
   end,
 
   --- Write the meta event to file.
   -- @function MetaEvent:write
   -- @param file file Binary output file handle
-  -- @param context table Write context
+  -- @param context table Write context (unused, accepted for interface consistency)
   write = function(self, file, context)
-    self.Event.write(self, file, context)
+    TimedEvent._write_event_time(file, self.time_delta)
+    midi_io.writeUInt8be(file, 0xFF)
     midi_io.writeUInt8be(file, self.meta_command)
     local data = self:_get_data()
     -- Meta event data length is a variable-length quantity per the MIDI spec
@@ -770,13 +766,19 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
   end,
 
   clone = function(self)
-    return self.class(self.time_delta, self.channel, self:_get_data())
+    return self.class(self.time_delta, self:_get_data())
   end,
 
-  __tostring = Event.__tostring,
+  __tostring = function(self)
+    local argument_strings = { self.time_delta }
+    local data = self:_get_data()
+    for i = 1, #data do
+      table.insert(argument_strings, data[i])
+    end
+    return string.format('%s(%s)', self.class.__name, table.concat(argument_strings, ', '))
+  end,
 
-  -- Meta event marker (not standard 0xFF to allow reuse of Event.write)
-  command = 0xF0,
+  command = 0xFF,
 }
 
 --- Sequence Number meta event (0x00).
@@ -880,10 +882,9 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   -- Parses raw data bytes into the canonical `tempo` field.
   -- @function SetTempoEvent:__init
   -- @param time_delta number Delta time in ticks
-  -- @param channel number Must be 0x0F
   -- @param data table Raw data bytes (3 bytes for tempo)
-  __init = function(self, time_delta, channel, data)
-    self.MetaEvent.__init(self, time_delta, channel, data)
+  __init = function(self, time_delta, data)
+    self.MetaEvent.__init(self, time_delta, data)
     if #self.data == 3 then
       self.tempo = (self.data[1] << 16) | (self.data[2] << 8) | self.data[3]
     elseif #self.data == 0 then
@@ -931,14 +932,6 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
     self:set_tempo(math.floor(60000000 / bpm))
   end,
 
-  __tostring = function(self)
-    local argument_strings = { self.time_delta, self.channel }
-    local data = self:_get_data()
-    for i = 1, #data do
-      table.insert(argument_strings, data[i])
-    end
-    return string.format('%s(%s)', self.class.__name, table.concat(argument_strings, ', '))
-  end,
 }
 
 --- SMPTE Offset meta event (0x54).
@@ -951,10 +944,9 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   -- Parses raw data bytes into canonical named fields.
   -- @function SMPTEOffsetEvent:__init
   -- @param time_delta number Delta time in ticks
-  -- @param channel number Must be 0x0F
   -- @param data table Raw data bytes (5 bytes for SMPTE offset)
-  __init = function(self, time_delta, channel, data)
-    self.MetaEvent.__init(self, time_delta, channel, data)
+  __init = function(self, time_delta, data)
+    self.MetaEvent.__init(self, time_delta, data)
     if #self.data == 5 then
       self.hours = self.data[1]
       self.minutes = self.data[2]
@@ -1021,10 +1013,9 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   -- Parses raw data bytes into canonical named fields.
   -- @function TimeSignatureEvent:__init
   -- @param time_delta number Delta time in ticks
-  -- @param channel number Must be 0x0F
   -- @param data table Raw data bytes (4 bytes for time signature)
-  __init = function(self, time_delta, channel, data)
-    self.MetaEvent.__init(self, time_delta, channel, data)
+  __init = function(self, time_delta, data)
+    self.MetaEvent.__init(self, time_delta, data)
     if #self.data == 4 then
       self.numerator = self.data[1]
       self.denominator = 2 ^ self.data[2]
@@ -1092,10 +1083,9 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
   -- Parses raw data bytes into canonical named fields.
   -- @function KeySignatureEvent:__init
   -- @param time_delta number Delta time in ticks
-  -- @param channel number Must be 0x0F
   -- @param data table Raw data bytes (2 bytes for key signature)
-  __init = function(self, time_delta, channel, data)
-    self.MetaEvent.__init(self, time_delta, channel, data)
+  __init = function(self, time_delta, data)
+    self.MetaEvent.__init(self, time_delta, data)
     if #self.data == 2 then
       local sf = self.data[1]
       -- Convert from unsigned to signed
@@ -1146,7 +1136,7 @@ SequencerSpecificEvent = class 'SequencerSpecificEvent' : extends(MetaEvent) {
   meta_command = 0x7F,
 }
 
--- Register regular MIDI events by command
+-- Register channel voice events by command nibble
 local event_type_list = {
   NoteEndEvent,
   NoteBeginEvent,
@@ -1155,7 +1145,6 @@ local event_type_list = {
   ProgramChangeEvent,
   ChannelPressureChangeEvent,
   PitchWheelChangeEvent,
-  MetaEvent,
 }
 
 local event_types = {}
