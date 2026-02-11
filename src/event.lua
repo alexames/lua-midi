@@ -913,12 +913,17 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   end,
 
   --- Get tempo in beats per minute.
+  -- Note: MIDI stores tempo as integer microseconds per quarter note, so
+  -- `set_bpm` followed by `get_bpm` may not return the exact original value
+  -- for BPM values where 60000000/bpm is not an integer (e.g. 133 BPM).
   -- @return number BPM
   get_bpm = function(self)
     return 60000000 / self.tempo
   end,
 
   --- Set tempo in beats per minute.
+  -- The BPM is converted to integer microseconds per quarter note, which
+  -- may introduce rounding for non-divisor BPM values.
   -- @function SetTempoEvent:set_bpm
   -- @param bpm number Beats per minute
   set_bpm = function(self, bpm)
