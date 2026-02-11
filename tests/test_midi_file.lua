@@ -141,6 +141,33 @@ describe('MidiFileEqualityTests', function()
     expect(a == b).to.be_falsy()
   end)
 
+  it('should reject ticks of zero', function()
+    local ok = pcall(function() MidiFile(1, 0) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject negative ticks', function()
+    local ok = pcall(function() MidiFile(1, -1) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject ticks exceeding 15-bit max', function()
+    local ok = pcall(function() MidiFile(1, 0x8000) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept ticks at boundaries', function()
+    local mf1 = MidiFile(1, 1)
+    expect(mf1.ticks).to.be_equal_to(1)
+    local mf2 = MidiFile(1, 0x7FFF)
+    expect(mf2.ticks).to.be_equal_to(0x7FFF)
+  end)
+
+  it('should reject ticks of zero with table constructor', function()
+    local ok = pcall(function() MidiFile{format=1, ticks=0} end)
+    expect(ok).to.be_falsy()
+  end)
+
   it('should consider MidiFile equal after write-read round-trip', function()
     local original = MidiFile{format = 1, ticks = 96}
     table.insert(original.tracks, Track {

@@ -27,6 +27,7 @@
 local llx = require 'llx'
 local midi_io = require 'lua-midi.io'
 local midi_track = require 'lua-midi.track'
+local validation = require 'lua-midi.validation'
 
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
@@ -124,6 +125,9 @@ MidiFile = class 'MidiFile' {
       self.format = args_or_format or 1
       self.ticks = ticks or 92
       self.tracks = tracks or llx.List{}
+    end
+    if not SmpteDivision:__isinstance(self.ticks) then
+      validation.assert_ticks(self.ticks)
     end
   end,
 
