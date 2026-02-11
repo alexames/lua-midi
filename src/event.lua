@@ -988,6 +988,7 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
     else
       error(string.format('SetTempoEvent expects 0 or 3 data bytes, got %d', #self.data), 2)
     end
+    self.data = nil  -- canonical fields are the sole source of truth
   end,
 
   _get_data = function(self)
@@ -1063,6 +1064,7 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
     else
       error(string.format('SMPTEOffsetEvent expects 0 or 5 data bytes, got %d', #self.data), 2)
     end
+    self.data = nil  -- canonical fields are the sole source of truth
   end,
 
   _get_data = function(self)
@@ -1124,6 +1126,7 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
     else
       error(string.format('TimeSignatureEvent expects 0 or 4 data bytes, got %d', #self.data), 2)
     end
+    self.data = nil  -- canonical fields are the sole source of truth
   end,
 
   --- Get time signature components.
@@ -1187,6 +1190,7 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
     else
       error(string.format('KeySignatureEvent expects 0 or 2 data bytes, got %d', #self.data), 2)
     end
+    self.data = nil  -- canonical fields are the sole source of truth
   end,
 
   --- Get key signature components.

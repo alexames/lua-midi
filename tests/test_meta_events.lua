@@ -339,7 +339,27 @@ describe('NewMetaEventTests', function()
     local data = {0x07, 0xA1, 0x20}
     local tempo = SetTempoEvent(0, 0x0F, data)
     data[1] = 0xFF
-    expect(tempo.data[1]).to.be_equal_to(0x07)
+    expect(tempo.tempo).to.be_equal_to(500000)  -- original value, unaffected by mutation
+  end)
+
+  it('should not retain stale data on SetTempoEvent', function()
+    local tempo = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    expect(tempo.data).to.be_equal_to(nil)
+  end)
+
+  it('should not retain stale data on TimeSignatureEvent', function()
+    local ts = TimeSignatureEvent(0, 0x0F, {4, 2, 24, 8})
+    expect(ts.data).to.be_equal_to(nil)
+  end)
+
+  it('should not retain stale data on KeySignatureEvent', function()
+    local ks = KeySignatureEvent(0, 0x0F, {2, 0})
+    expect(ks.data).to.be_equal_to(nil)
+  end)
+
+  it('should not retain stale data on SMPTEOffsetEvent', function()
+    local smpte = SMPTEOffsetEvent(0, 0x0F, {1, 30, 45, 12, 50})
+    expect(smpte.data).to.be_equal_to(nil)
   end)
 
   it('should serialize tempo from canonical field after direct mutation', function()
