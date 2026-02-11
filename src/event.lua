@@ -433,8 +433,7 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
       midi_io.writeUInt8be(file, command_byte)
       context.previous_command_byte = command_byte
     end
-    midi_io.writeUInt8be(file, self.value & 0x7F)
-    midi_io.writeUInt8be(file, (self.value >> 7) & 0x7F)
+    midi_io.writeUInt14le(file, self.value)
   end,
 
   fields = { 'value' },
@@ -560,17 +559,13 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
   end,
 
   read = function(file, time_delta)
-    local lsb = midi_io.readUInt8be(file)
-    local msb = midi_io.readUInt8be(file)
-    local position = (msb << 7) | lsb
-    return SongPositionPointerEvent(time_delta, position)
+    return SongPositionPointerEvent(time_delta, midi_io.readUInt14le(file))
   end,
 
   write = function(self, file)
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xF2)
-    midi_io.writeUInt8be(file, self.position & 0x7F)
-    midi_io.writeUInt8be(file, (self.position >> 7) & 0x7F)
+    midi_io.writeUInt14le(file, self.position)
   end,
 
   __eq = function(self, other)

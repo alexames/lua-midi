@@ -89,6 +89,26 @@ function readUInt8be(file)
   return _read_bytes(file, 1):byte(1)
 end
 
+--- Write a 14-bit value as two 7-bit bytes, LSB first.
+-- Used by MIDI pitch bend and song position pointer.
+-- @param file file An open file handle for writing
+-- @param i number The value to write (0 <= i <= 16383)
+function writeUInt14le(file, i)
+  writeUInt8be(file, i & 0x7F)
+  writeUInt8be(file, (i >> 7) & 0x7F)
+end
+
+--- Read a 14-bit value from two 7-bit bytes, LSB first.
+-- Used by MIDI pitch bend and song position pointer.
+-- @param file file An open file handle for reading
+-- @return number The 14-bit value (0-16383)
+-- @raise error on unexpected EOF
+function readUInt14le(file)
+  local lsb = readUInt8be(file)
+  local msb = readUInt8be(file)
+  return (msb << 7) | lsb
+end
+
 --- Create a counting writer that tallies bytes written without storing them.
 -- The returned object has a file-like `write` method and a `count` field.
 -- @return table A counting writer with write(self, s) and count fields

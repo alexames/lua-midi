@@ -73,6 +73,42 @@ describe('MidiIoTests', function()
     expect(ok).to.be_falsy()
     expect(tostring(err):match('Unexpected end of MIDI data')).to.be_truthy()
   end)
+
+  it('should write and read UInt14le correctly at center value', function()
+    local pos = 0
+    local buffer = {}
+    local fake_file = {
+      write = function(_, s) table.insert(buffer, s) end,
+      read = function(_, n)
+        local joined = table.concat(buffer)
+        local result = joined:sub(pos + 1, pos + n)
+        pos = pos + n
+        return result
+      end
+    }
+    io_util.writeUInt14le(fake_file, 8192)
+    local read = io_util.readUInt14le(fake_file)
+    expect(read).to.be_equal_to(8192)
+  end)
+
+  it('should write and read UInt14le correctly at boundaries', function()
+    for _, value in ipairs({0, 1, 127, 128, 8192, 16383}) do
+      local pos = 0
+      local buffer = {}
+      local fake_file = {
+        write = function(_, s) table.insert(buffer, s) end,
+        read = function(_, n)
+          local joined = table.concat(buffer)
+          local result = joined:sub(pos + 1, pos + n)
+          pos = pos + n
+          return result
+        end
+      }
+      io_util.writeUInt14le(fake_file, value)
+      local read = io_util.readUInt14le(fake_file)
+      expect(read).to.be_equal_to(value)
+    end
+  end)
 end)
 
 run_unit_tests()
