@@ -203,15 +203,18 @@ Event = class 'Event' {
   end,
 
   --- Equality comparison for channel voice events.
-  -- Two events are equal if they have the same class, time delta, channel, and schema field values.
+  -- Two events are equal if they have the same class, time delta, channel, and field values.
+  -- Uses `schema` (byte-per-field events) or `fields` (custom-encoded events) to
+  -- determine which fields to compare.
   -- @param other Event The event to compare with
   -- @return boolean True if equal
   __eq = function(self, other)
     if self.class ~= other.class then return false end
     if self.time_delta ~= other.time_delta then return false end
     if self.channel ~= other.channel then return false end
-    if self.schema then
-      for _, field in ipairs(self.schema) do
+    local fields = self.schema or self.fields
+    if fields then
+      for _, field in ipairs(fields) do
         if self[field] ~= other[field] then return false end
       end
     end
@@ -223,8 +226,9 @@ Event = class 'Event' {
   -- @return Event A new event equal to this one
   clone = function(self)
     local args = { self.time_delta, self.channel }
-    if self.schema then
-      for _, field in ipairs(self.schema) do
+    local fields = self.schema or self.fields
+    if fields then
+      for _, field in ipairs(fields) do
         table.insert(args, self[field])
       end
     end
@@ -235,8 +239,9 @@ Event = class 'Event' {
   -- @return string Human-readable event representation
   __tostring = function(self)
     local argument_strings = { self.time_delta, self.channel }
-    if self.schema then
-      for _, field in ipairs(self.schema) do
+    local fields = self.schema or self.fields
+    if fields then
+      for _, field in ipairs(fields) do
         local value = assert(self[field], string.format('No field %s on Event', field))
         table.insert(argument_strings, value)
       end
@@ -430,21 +435,7 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
     midi_io.writeUInt8be(file, (self.value >> 7) & 0x7F)
   end,
 
-  __eq = function(self, other)
-    if self.class ~= other.class then return false end
-    if self.time_delta ~= other.time_delta then return false end
-    if self.channel ~= other.channel then return false end
-    return self.value == other.value
-  end,
-
-  clone = function(self)
-    return PitchWheelChangeEvent(self.time_delta, self.channel, self.value)
-  end,
-
-  __tostring = function(self)
-    return string.format('%s(%s, %s, %s)', self.class.__name, self.time_delta, self.channel, self.value)
-  end,
-
+  fields = { 'value' },
   command = 0xE0,
 }
 
