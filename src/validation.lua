@@ -22,21 +22,33 @@ local llx = require 'llx'
 
 local _ENV, _M = llx.environment.create_module_environment()
 
+--- Validate that a value is an integer within a given range.
+-- @param value any The value to validate
+-- @param name string Human-readable name for error messages
+-- @param min number Minimum allowed value (inclusive)
+-- @param max number Maximum allowed value (inclusive)
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+-- @local
+local function _validate_integer_range(value, name, min, max)
+  if type(value) ~= 'number' then
+    return false, name .. ' must be a number'
+  end
+  if value < min or value > max then
+    return false, string.format('%s must be %d-%d, got %d', name, min, max, value)
+  end
+  if value ~= math.floor(value) then
+    return false, string.format('%s must be an integer, got %f', name, value)
+  end
+  return true
+end
+
 --- Validate a MIDI channel number (0-15).
 -- @param channel number The channel number to validate
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_channel(channel)
-  if type(channel) ~= 'number' then
-    return false, 'Channel must be a number'
-  end
-  if channel < 0 or channel > 15 then
-    return false, string.format('Channel must be 0-15, got %d', channel)
-  end
-  if channel ~= math.floor(channel) then
-    return false, string.format('Channel must be an integer, got %f', channel)
-  end
-  return true
+  return _validate_integer_range(channel, 'Channel', 0, 15)
 end
 
 --- Validate a MIDI note number (0-127).
@@ -44,16 +56,7 @@ end
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_note(note)
-  if type(note) ~= 'number' then
-    return false, 'Note must be a number'
-  end
-  if note < 0 or note > 127 then
-    return false, string.format('Note must be 0-127, got %d', note)
-  end
-  if note ~= math.floor(note) then
-    return false, string.format('Note must be an integer, got %f', note)
-  end
-  return true
+  return _validate_integer_range(note, 'Note', 0, 127)
 end
 
 --- Validate a MIDI velocity (0-127).
@@ -61,16 +64,7 @@ end
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_velocity(velocity)
-  if type(velocity) ~= 'number' then
-    return false, 'Velocity must be a number'
-  end
-  if velocity < 0 or velocity > 127 then
-    return false, string.format('Velocity must be 0-127, got %d', velocity)
-  end
-  if velocity ~= math.floor(velocity) then
-    return false, string.format('Velocity must be an integer, got %f', velocity)
-  end
-  return true
+  return _validate_integer_range(velocity, 'Velocity', 0, 127)
 end
 
 --- Validate a MIDI controller number (0-127).
@@ -78,16 +72,7 @@ end
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_controller(controller)
-  if type(controller) ~= 'number' then
-    return false, 'Controller must be a number'
-  end
-  if controller < 0 or controller > 127 then
-    return false, string.format('Controller must be 0-127, got %d', controller)
-  end
-  if controller ~= math.floor(controller) then
-    return false, string.format('Controller must be an integer, got %f', controller)
-  end
-  return true
+  return _validate_integer_range(controller, 'Controller', 0, 127)
 end
 
 --- Validate a MIDI program number (0-127).
@@ -95,16 +80,7 @@ end
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_program(program)
-  if type(program) ~= 'number' then
-    return false, 'Program must be a number'
-  end
-  if program < 0 or program > 127 then
-    return false, string.format('Program must be 0-127, got %d', program)
-  end
-  if program ~= math.floor(program) then
-    return false, string.format('Program must be an integer, got %f', program)
-  end
-  return true
+  return _validate_integer_range(program, 'Program', 0, 127)
 end
 
 --- Validate a MIDI pitch bend value (0-16383, center is 8192).
@@ -112,16 +88,7 @@ end
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_pitch_bend(value)
-  if type(value) ~= 'number' then
-    return false, 'Pitch bend must be a number'
-  end
-  if value < 0 or value > 16383 then
-    return false, string.format('Pitch bend must be 0-16383, got %d', value)
-  end
-  if value ~= math.floor(value) then
-    return false, string.format('Pitch bend must be an integer, got %f', value)
-  end
-  return true
+  return _validate_integer_range(value, 'Pitch bend', 0, 16383)
 end
 
 --- Validate a 7-bit data value (0-127).
@@ -130,17 +97,7 @@ end
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_7bit(value, name)
-  name = name or 'Value'
-  if type(value) ~= 'number' then
-    return false, name .. ' must be a number'
-  end
-  if value < 0 or value > 127 then
-    return false, string.format('%s must be 0-127, got %d', name, value)
-  end
-  if value ~= math.floor(value) then
-    return false, string.format('%s must be an integer, got %f', name, value)
-  end
-  return true
+  return _validate_integer_range(value, name or 'Value', 0, 127)
 end
 
 --- Assert that a channel is valid, throws error if not.

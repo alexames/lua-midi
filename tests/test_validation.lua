@@ -230,14 +230,35 @@ describe('AssertValidationTests', function()
     validation.assert_velocity(100)
   end)
 
+  it('should throw error when assert_controller is called with invalid controller', function()
+    local success = pcall(function()
+      validation.assert_controller(200)
+    end)
+    expect(success).to.be_falsy()
+  end)
+
   it('should not throw when assert_controller is called with valid controller', function()
     -- Should not throw
     validation.assert_controller(7)
   end)
 
+  it('should throw error when assert_program is called with invalid program', function()
+    local success = pcall(function()
+      validation.assert_program(200)
+    end)
+    expect(success).to.be_falsy()
+  end)
+
   it('should not throw when assert_program is called with valid program', function()
     -- Should not throw
     validation.assert_program(42)
+  end)
+
+  it('should throw error when assert_pitch_bend is called with invalid pitch bend', function()
+    local success = pcall(function()
+      validation.assert_pitch_bend(20000)
+    end)
+    expect(success).to.be_falsy()
   end)
 
   it('should not throw when assert_pitch_bend is called with valid pitch bend', function()

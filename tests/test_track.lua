@@ -28,24 +28,23 @@ describe('TrackTests', function()
     expect(str:match('NoteBeginEvent')).to.be_truthy()
   end)
 
-  it('should produce string output when track write is called', function()
+  it('should write MTrk header and correct length', function()
     local buffer = {}
     local file = { write = function(_, s) table.insert(buffer, s) end }
     local e = NoteBeginEvent(0, 0, 60, 100)
     local track = Track { e }
     track:write(file)
     local out = table.concat(buffer)
-    expect(type(out) == 'string').to.be_truthy()
-  end)
-
-  it('should produce output longer than 4 bytes when track write is called', function()
-    local buffer = {}
-    local file = { write = function(_, s) table.insert(buffer, s) end }
-    local e = NoteBeginEvent(0, 0, 60, 100)
-    local track = Track { e }
-    track:write(file)
-    local out = table.concat(buffer)
-    expect(#out > 4).to.be_truthy() -- should include 'MTrk' and length
+    -- MTrk header (4 bytes) + length (4 bytes) + event data
+    expect(out:sub(1, 4)).to.be_equal_to('MTrk')
+    -- NoteBeginEvent(0, 0, 60, 100) = delta(1) + command(1) + note(1) + velocity(1) = 4 bytes
+    -- Track length should be 4, stored as big-endian UInt32
+    expect(out:byte(5)).to.be_equal_to(0)
+    expect(out:byte(6)).to.be_equal_to(0)
+    expect(out:byte(7)).to.be_equal_to(0)
+    expect(out:byte(8)).to.be_equal_to(4)
+    -- Total output: 4 (MTrk) + 4 (length) + 4 (event) = 12 bytes
+    expect(#out).to.be_equal_to(12)
   end)
 end)
 

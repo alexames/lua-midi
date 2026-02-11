@@ -490,167 +490,75 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
   end,
 }
 
+--- Create a simple system event class with no data payload.
+-- These events consist only of a status byte and a time delta.
+-- @param name string Class name
+-- @param status_byte number MIDI status byte for this event
+-- @return table The new event class
+-- @local
+local function _simple_system_event(name, status_byte)
+  return class(name) : extends(TimedEvent) {
+    __init = function(self, time_delta)
+      TimedEvent.__init(self, time_delta)
+    end,
+
+    read = function(file, time_delta)
+      return _M[name](time_delta)
+    end,
+
+    write = function(self, file)
+      TimedEvent._write_event_time(file, self.time_delta)
+      midi_io.writeUInt8be(file, status_byte)
+    end,
+
+    __tostring = function(self)
+      return string.format('%s(%d)', name, self.time_delta)
+    end,
+  }
+end
+
 --- Tune Request event (0xF6).
 -- Requests that analog synthesizers tune their oscillators.
 -- @type TuneRequestEvent
 -- @field time_delta number Delta time in ticks
-TuneRequestEvent = class 'TuneRequestEvent' : extends(TimedEvent) {
-  __init = function(self, time_delta)
-    TimedEvent.__init(self, time_delta)
-  end,
-
-  read = function(file, time_delta)
-    return TuneRequestEvent(time_delta)
-  end,
-
-  write = function(self, file)
-    TimedEvent._write_event_time(file, self.time_delta)
-    midi_io.writeUInt8be(file, 0xF6)
-  end,
-
-  __tostring = function(self)
-    return string.format('TuneRequestEvent(%d)', self.time_delta)
-  end,
-}
+TuneRequestEvent = _simple_system_event('TuneRequestEvent', 0xF6)
 
 --- Timing Clock event (0xF8).
 -- Sent 24 times per quarter note for synchronization.
 -- @type TimingClockEvent
 -- @field time_delta number Delta time in ticks
-TimingClockEvent = class 'TimingClockEvent' : extends(TimedEvent) {
-  __init = function(self, time_delta)
-    TimedEvent.__init(self, time_delta)
-  end,
-
-  read = function(file, time_delta)
-    return TimingClockEvent(time_delta)
-  end,
-
-  write = function(self, file)
-    TimedEvent._write_event_time(file, self.time_delta)
-    midi_io.writeUInt8be(file, 0xF8)
-  end,
-
-  __tostring = function(self)
-    return string.format('TimingClockEvent(%d)', self.time_delta)
-  end,
-}
+TimingClockEvent = _simple_system_event('TimingClockEvent', 0xF8)
 
 --- Start event (0xFA).
 -- Starts playback from the beginning of the song.
 -- @type StartEvent
 -- @field time_delta number Delta time in ticks
-StartEvent = class 'StartEvent' : extends(TimedEvent) {
-  __init = function(self, time_delta)
-    TimedEvent.__init(self, time_delta)
-  end,
-
-  read = function(file, time_delta)
-    return StartEvent(time_delta)
-  end,
-
-  write = function(self, file)
-    TimedEvent._write_event_time(file, self.time_delta)
-    midi_io.writeUInt8be(file, 0xFA)
-  end,
-
-  __tostring = function(self)
-    return string.format('StartEvent(%d)', self.time_delta)
-  end,
-}
+StartEvent = _simple_system_event('StartEvent', 0xFA)
 
 --- Continue event (0xFB).
 -- Resumes playback from the current position.
 -- @type ContinueEvent
 -- @field time_delta number Delta time in ticks
-ContinueEvent = class 'ContinueEvent' : extends(TimedEvent) {
-  __init = function(self, time_delta)
-    TimedEvent.__init(self, time_delta)
-  end,
-
-  read = function(file, time_delta)
-    return ContinueEvent(time_delta)
-  end,
-
-  write = function(self, file)
-    TimedEvent._write_event_time(file, self.time_delta)
-    midi_io.writeUInt8be(file, 0xFB)
-  end,
-
-  __tostring = function(self)
-    return string.format('ContinueEvent(%d)', self.time_delta)
-  end,
-}
+ContinueEvent = _simple_system_event('ContinueEvent', 0xFB)
 
 --- Stop event (0xFC).
 -- Stops playback.
 -- @type StopEvent
 -- @field time_delta number Delta time in ticks
-StopEvent = class 'StopEvent' : extends(TimedEvent) {
-  __init = function(self, time_delta)
-    TimedEvent.__init(self, time_delta)
-  end,
-
-  read = function(file, time_delta)
-    return StopEvent(time_delta)
-  end,
-
-  write = function(self, file)
-    TimedEvent._write_event_time(file, self.time_delta)
-    midi_io.writeUInt8be(file, 0xFC)
-  end,
-
-  __tostring = function(self)
-    return string.format('StopEvent(%d)', self.time_delta)
-  end,
-}
+StopEvent = _simple_system_event('StopEvent', 0xFC)
 
 --- Active Sensing event (0xFE).
 -- Sent periodically to indicate the connection is active.
 -- @type ActiveSensingEvent
 -- @field time_delta number Delta time in ticks
-ActiveSensingEvent = class 'ActiveSensingEvent' : extends(TimedEvent) {
-  __init = function(self, time_delta)
-    TimedEvent.__init(self, time_delta)
-  end,
-
-  read = function(file, time_delta)
-    return ActiveSensingEvent(time_delta)
-  end,
-
-  write = function(self, file)
-    TimedEvent._write_event_time(file, self.time_delta)
-    midi_io.writeUInt8be(file, 0xFE)
-  end,
-
-  __tostring = function(self)
-    return string.format('ActiveSensingEvent(%d)', self.time_delta)
-  end,
-}
+ActiveSensingEvent = _simple_system_event('ActiveSensingEvent', 0xFE)
 
 --- System Reset event (0xFF as real-time, not in files).
 -- Resets all devices to power-on state.
 -- Note: In MIDI files, 0xFF indicates a meta event, not system reset.
 -- @type SystemResetEvent
 -- @field time_delta number Delta time in ticks
-SystemResetEvent = class 'SystemResetEvent' : extends(TimedEvent) {
-  __init = function(self, time_delta)
-    TimedEvent.__init(self, time_delta)
-  end,
-
-  read = function(file, time_delta)
-    return SystemResetEvent(time_delta)
-  end,
-
-  write = function(self, file)
-    TimedEvent._write_event_time(file, self.time_delta)
-    midi_io.writeUInt8be(file, 0xFF)
-  end,
-
-  __tostring = function(self)
-    return string.format('SystemResetEvent(%d)', self.time_delta)
-  end,
-}
+SystemResetEvent = _simple_system_event('SystemResetEvent', 0xFF)
 
 --- Meta Event base class (0xFF).
 -- Meta events contain non-MIDI data such as tempo, time signature, lyrics, etc.
@@ -726,8 +634,8 @@ TextEvent = class 'TextEvent' : extends(MetaEvent) {
 
 --- Copyright meta event (0x02).
 -- Copyright notice for the MIDI file.
--- @type CopywriteEvent
-CopywriteEvent = class 'CopywriteEvent' : extends(MetaEvent) {
+-- @type CopyrightEvent
+CopyrightEvent = class 'CopyrightEvent' : extends(MetaEvent) {
   meta_command = 0x02,
 }
 
@@ -982,7 +890,7 @@ end
 local meta_event_type_list = {
   SetSequenceNumberEvent,
   TextEvent,
-  CopywriteEvent,
+  CopyrightEvent,
   SequenceNameEvent,
   TrackInstrumentNameEvent,
   LyricEvent,

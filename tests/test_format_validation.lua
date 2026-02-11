@@ -275,12 +275,24 @@ describe('WriteValidationTests', function()
     expect(success).to.be_falsy()
   end)
 
-  it('should succeed when write is called on valid format', function()
+  it('should write correct MThd header for valid format 0', function()
     local mf = MidiFile{format = 0}
     table.insert(mf.tracks, Track())
-    
+
     local bytes = mf:__tobytes()
-    expect(#bytes > 0).to.be_truthy()
+    -- MThd header
+    expect(bytes:sub(1, 4)).to.be_equal_to('MThd')
+    -- Header length = 6 (big-endian UInt32)
+    expect(bytes:byte(5)).to.be_equal_to(0)
+    expect(bytes:byte(6)).to.be_equal_to(0)
+    expect(bytes:byte(7)).to.be_equal_to(0)
+    expect(bytes:byte(8)).to.be_equal_to(6)
+    -- Format = 0 (big-endian UInt16)
+    expect(bytes:byte(9)).to.be_equal_to(0)
+    expect(bytes:byte(10)).to.be_equal_to(0)
+    -- Track count = 1 (big-endian UInt16)
+    expect(bytes:byte(11)).to.be_equal_to(0)
+    expect(bytes:byte(12)).to.be_equal_to(1)
   end)
 end)
 
