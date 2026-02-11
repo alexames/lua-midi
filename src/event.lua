@@ -40,6 +40,17 @@ local validation = require 'lua-midi.validation'
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
 
+--- Compute integer log base 2 of a power-of-two value.
+-- Avoids floating-point imprecision from math.log.
+-- @param n number A positive power of 2
+-- @return number The exponent p such that 2^p == n
+-- @local
+local function _ilog2(n)
+  local p = 0
+  while n > 1 do n = n >> 1; p = p + 1 end
+  return p
+end
+
 --- TimedEvent: Base class for all MIDI events with a time delta.
 -- @type TimedEvent
 -- @field time_delta number Delta time in ticks since the previous event
@@ -1121,7 +1132,7 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   end,
 
   _get_data = function(self)
-    local denominator_power = math.floor(math.log(self.denominator) / math.log(2))
+    local denominator_power = _ilog2(self.denominator)
     return {
       self.numerator,
       denominator_power,

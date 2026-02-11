@@ -126,6 +126,15 @@ describe('TimeSignatureEventTests', function()
     ts:set_time_signature(7, 8)  -- 7/8 time
     expect(ts:_get_data()[2]).to.be_equal_to(3)  -- 2^3 = 8
   end)
+
+  it('should encode all power-of-two denominators correctly', function()
+    local ts = TimeSignatureEvent(0, 0x0F, {})
+    for power = 0, 5 do
+      local denom = 2 ^ power
+      ts:set_time_signature(4, denom)
+      expect(ts:_get_data()[2]).to.be_equal_to(power)
+    end
+  end)
 end)
 
 describe('KeySignatureEventTests', function()
