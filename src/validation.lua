@@ -140,6 +140,15 @@ function assert_program(program)
   if not valid then error(err, 2) end
 end
 
+--- Assert that a 7-bit value is valid, throws error if not.
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @raise error if value is invalid
+function assert_7bit(value, name)
+  local valid, err = validate_7bit(value, name)
+  if not valid then error(err, 2) end
+end
+
 --- Assert that a pitch bend value is valid, throws error if not.
 -- @param value number The pitch bend value to validate
 -- @raise error if pitch bend value is invalid

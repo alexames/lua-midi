@@ -35,6 +35,7 @@
 
 local llx = require 'llx'
 local midi_io = require 'lua-midi.io'
+local validation = require 'lua-midi.validation'
 
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
@@ -264,6 +265,9 @@ NoteEndEvent = class 'NoteEndEvent' : extends(Event) {
   -- @param note_number number MIDI note number (0-127)
   -- @param velocity number Release velocity (0-127)
   __init = function(self, time_delta, channel, note_number, velocity)
+    validation.assert_channel(channel)
+    validation.assert_note(note_number)
+    validation.assert_velocity(velocity)
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
     self.velocity = velocity
@@ -287,6 +291,9 @@ NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
   -- @param note_number number MIDI note number (0-127)
   -- @param velocity number Attack velocity (0-127)
   __init = function(self, time_delta, channel, note_number, velocity)
+    validation.assert_channel(channel)
+    validation.assert_note(note_number)
+    validation.assert_velocity(velocity)
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
     self.velocity = velocity
@@ -310,6 +317,9 @@ VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
   -- @param note_number number MIDI note number (0-127)
   -- @param velocity number Pressure value (0-127)
   __init = function(self, time_delta, channel, note_number, velocity)
+    validation.assert_channel(channel)
+    validation.assert_note(note_number)
+    validation.assert_velocity(velocity)
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
     self.velocity = velocity
@@ -333,6 +343,9 @@ ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
   -- @param controller_number number Controller number (0-127)
   -- @param value number Controller value (0-127)
   __init = function(self, time_delta, channel, controller_number, value)
+    validation.assert_channel(channel)
+    validation.assert_controller(controller_number)
+    validation.assert_7bit(value, 'Controller value')
     self.Event.__init(self, time_delta, channel)
     self.controller_number = controller_number
     self.value = value
@@ -354,6 +367,8 @@ ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
   -- @param channel number MIDI channel (0-15)
   -- @param new_program_number number Program/patch number (0-127)
   __init = function(self, time_delta, channel, new_program_number)
+    validation.assert_channel(channel)
+    validation.assert_program(new_program_number)
     self.Event.__init(self, time_delta, channel)
     self.new_program_number = new_program_number
   end,
@@ -374,6 +389,8 @@ ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event)
   -- @param channel number MIDI channel (0-15)
   -- @param pressure number Pressure value (0-127)
   __init = function(self, time_delta, channel, pressure)
+    validation.assert_channel(channel)
+    validation.assert_7bit(pressure, 'Pressure')
     self.Event.__init(self, time_delta, channel)
     self.pressure = pressure
   end,
@@ -396,6 +413,9 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
   -- @param bottom number LSB of pitch bend value (0-127)
   -- @param top number MSB of pitch bend value (0-127)
   __init = function(self, time_delta, channel, bottom, top)
+    validation.assert_channel(channel)
+    validation.assert_7bit(bottom, 'Pitch bend LSB')
+    validation.assert_7bit(top, 'Pitch bend MSB')
     self.Event.__init(self, time_delta, channel)
     self.bottom = bottom
     self.top = top

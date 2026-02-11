@@ -8,6 +8,8 @@ local NoteBeginEvent = event.NoteBeginEvent
 local NoteEndEvent = event.NoteEndEvent
 local ProgramChangeEvent = event.ProgramChangeEvent
 local ChannelPressureChangeEvent = event.ChannelPressureChangeEvent
+local ControllerChangeEvent = event.ControllerChangeEvent
+local PitchWheelChangeEvent = event.PitchWheelChangeEvent
 local MetaEvent = event.MetaEvent
 local SetTempoEvent = event.SetTempoEvent
 local EndOfTrackEvent = event.EndOfTrackEvent
@@ -388,6 +390,64 @@ describe('MalformedInputTests', function()
     end)
     tmp:close()
     expect(success).to.be_falsy()
+  end)
+end)
+
+describe('ConstructorValidationTests', function()
+  it('should reject NoteBeginEvent with channel out of range', function()
+    local ok = pcall(function() NoteBeginEvent(0, 16, 60, 100) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject NoteBeginEvent with note out of range', function()
+    local ok = pcall(function() NoteBeginEvent(0, 0, 128, 100) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject NoteBeginEvent with velocity out of range', function()
+    local ok = pcall(function() NoteBeginEvent(0, 0, 60, 200) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject NoteEndEvent with invalid channel', function()
+    local ok = pcall(function() NoteEndEvent(0, -1, 60, 0) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject ProgramChangeEvent with invalid program number', function()
+    local ok = pcall(function() ProgramChangeEvent(0, 0, 128) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject ChannelPressureChangeEvent with invalid pressure', function()
+    local ok = pcall(function() ChannelPressureChangeEvent(0, 0, 200) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject ControllerChangeEvent with invalid controller', function()
+    local ok = pcall(function() ControllerChangeEvent(0, 0, 128, 64) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject ControllerChangeEvent with invalid value', function()
+    local ok = pcall(function() ControllerChangeEvent(0, 0, 7, 128) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject PitchWheelChangeEvent with invalid LSB', function()
+    local ok = pcall(function() PitchWheelChangeEvent(0, 0, 128, 64) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject PitchWheelChangeEvent with invalid MSB', function()
+    local ok = pcall(function() PitchWheelChangeEvent(0, 0, 64, 128) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept valid NoteBeginEvent at boundaries', function()
+    -- Should not throw
+    NoteBeginEvent(0, 0, 0, 0)
+    NoteBeginEvent(0, 15, 127, 127)
   end)
 end)
 
