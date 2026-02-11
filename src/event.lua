@@ -46,6 +46,8 @@ local class = llx.class
 -- @return number The exponent p such that 2^p == n
 -- @local
 local function _ilog2(n)
+  assert(n > 0 and (n & (n - 1)) == 0,
+    string.format('_ilog2 requires a positive power of 2, got %s', tostring(n)))
   local p = 0
   while n > 1 do n = n >> 1; p = p + 1 end
   return p
