@@ -42,45 +42,10 @@ Track = class 'Track' {
   -- @local
   _get_track_byte_length = function(self)
     local length = 0
-    local previous_command_byte = 0
-
-    for i, event in ipairs(self.events) do
-      -- Account for the size of the delta time (variable length quantity)
-      local time_delta = event.time_delta
-      if time_delta > 0x1FFFFF then
-        length = length + 4
-      elseif time_delta > 0x3FFF then
-        length = length + 3
-      elseif time_delta > 0x7F then
-        length = length + 2
-      else
-        length = length + 1
-      end
-
-      -- Determine if command byte must be written (running status optimization)
-      local commandByte = event.command | event.channel
-      if commandByte ~= previous_command_byte
-         or event.command == midi_event.MetaEvent.command then
-        length = length + 1
-        previous_command_byte = commandByte
-      end
-
-      -- Account for the size of the event data
-      if event.command == midi_event.ProgramChangeEvent.command
-         or event.command == midi_event.ChannelPressureChangeEvent.command then
-        length = length + 1
-      elseif event.command == midi_event.NoteEndEvent.command
-          or event.command == midi_event.NoteBeginEvent.command
-          or event.command == midi_event.VelocityChangeEvent.command
-          or event.command == midi_event.ControllerChangeEvent.command
-          or event.command == midi_event.PitchWheelChangeEvent.command then
-        length = length + 2
-      elseif event.command == midi_event.MetaEvent.command then
-        -- Meta events have: 1 byte (meta ID) + 1 byte (length) + payload
-        length = length + 2 + #event.data
-      end
+    local context = { previous_command_byte = 0 }
+    for _, event in ipairs(self.events) do
+      length = length + event:_byte_length(context)
     end
-
     return length
   end,
 
