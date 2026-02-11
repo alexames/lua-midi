@@ -91,7 +91,7 @@ describe('ChannelVoiceEventTests', function()
     local e = ChannelPressureChangeEvent(10, 0, 80)
     expect(e.time_delta).to.be_equal_to(10)
     expect(e.channel).to.be_equal_to(0)
-    expect(e.channel_number).to.be_equal_to(80)
+    expect(e.pressure).to.be_equal_to(80)
   end)
 
   it('should write correct bytes for ChannelPressureChangeEvent (1-field schema)', function()

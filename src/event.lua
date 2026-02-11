@@ -308,20 +308,20 @@ VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
 -- @field time_delta number Delta time in ticks
 -- @field channel number MIDI channel (0-15)
 -- @field controller_number number Controller number (0-127)
--- @field velocity number Controller value (0-127)
+-- @field value number Controller value (0-127)
 ControllerChangeEvent = class 'ControllerChangeEvent' : extends(Event) {
   --- Create a new ControllerChangeEvent.
   -- @function ControllerChangeEvent:__init
   -- @param time_delta number Delta time in ticks
   -- @param channel number MIDI channel (0-15)
   -- @param controller_number number Controller number (0-127)
-  -- @param velocity number Controller value (0-127)
-  __init = function(self, time_delta, channel, controller_number, velocity)
+  -- @param value number Controller value (0-127)
+  __init = function(self, time_delta, channel, controller_number, value)
     self.Event.__init(self, time_delta, channel)
     self.controller_number = controller_number
-    self.velocity = velocity
+    self.value = value
   end,
-  schema = { 'controller_number', 'velocity' },
+  schema = { 'controller_number', 'value' },
   command = 0xB0,
 }
 
@@ -350,18 +350,18 @@ ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
 -- @type ChannelPressureChangeEvent
 -- @field time_delta number Delta time in ticks
 -- @field channel number MIDI channel (0-15)
--- @field channel_number number Pressure value (0-127)
+-- @field pressure number Pressure value (0-127)
 ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event) {
   --- Create a new ChannelPressureChangeEvent.
   -- @function ChannelPressureChangeEvent:__init
   -- @param time_delta number Delta time in ticks
   -- @param channel number MIDI channel (0-15)
-  -- @param channel_number number Pressure value (0-127)
-  __init = function(self, time_delta, channel, channel_number)
+  -- @param pressure number Pressure value (0-127)
+  __init = function(self, time_delta, channel, pressure)
     self.Event.__init(self, time_delta, channel)
-    self.channel_number = channel_number
+    self.pressure = pressure
   end,
-  schema = { 'channel_number' },
+  schema = { 'pressure' },
   command = 0xD0,
 }
 
