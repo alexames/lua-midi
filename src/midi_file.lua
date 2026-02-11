@@ -31,6 +31,56 @@ local midi_track = require 'lua-midi.track'
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
 
+-- SMPTE frame rate lookup tables
+local _frame_rate_to_code = {
+  [24] = 24,
+  [25] = 25,
+  [29.97] = 29,
+  [30] = 30,
+}
+
+local _code_to_frame_rate = {
+  [24] = 24,
+  [25] = 25,
+  [29] = 29.97,
+  [30] = 30,
+}
+
+--- Decode a raw 16-bit ticks value into a SMPTE timing table.
+-- @param ticks_raw number The raw unsigned 16-bit value from the MIDI header
+-- @return table SMPTE timing table with smpte, frame_rate, ticks_per_frame, encoded
+-- @local
+local function _decode_smpte(ticks_raw)
+  local signed_ticks = ticks_raw - 65536
+  local frame_rate_code = (-signed_ticks) >> 8
+  local ticks_per_frame = (-signed_ticks) & 0xFF
+  return {
+    smpte = true,
+    frame_rate = _code_to_frame_rate[frame_rate_code] or frame_rate_code,
+    ticks_per_frame = ticks_per_frame,
+    encoded = signed_ticks,
+  }
+end
+
+--- Encode a SMPTE frame rate and ticks-per-frame into a SMPTE timing table.
+-- @param frame_rate number Frame rate (24, 25, 29.97, or 30)
+-- @param ticks_per_frame number Ticks per frame
+-- @return table SMPTE timing table
+-- @raise error if frame_rate is invalid
+-- @local
+local function _encode_smpte(frame_rate, ticks_per_frame)
+  local frame_rate_code = _frame_rate_to_code[frame_rate]
+  if not frame_rate_code then
+    error(string.format('Invalid SMPTE frame rate: %g', frame_rate))
+  end
+  return {
+    smpte = true,
+    frame_rate = frame_rate,
+    ticks_per_frame = ticks_per_frame,
+    encoded = -(frame_rate_code << 8 | ticks_per_frame),
+  }
+end
+
 --- MidiFile class for reading and writing Standard MIDI Files (SMF).
 -- @type MidiFile
 -- @field format number Format type (0, 1, or 2)
@@ -66,12 +116,7 @@ MidiFile = class 'MidiFile' {
   -- SMPTE timing uses absolute time (frames) rather than musical time (beats).
   -- @return boolean True if SMPTE timing is used
   is_smpte = function(self)
-    if type(self.ticks) == 'table' and self.ticks.smpte then
-      return true
-    elseif type(self.ticks) == 'number' and self.ticks < 0 then
-      return true
-    end
-    return false
+    return type(self.ticks) == 'table' and self.ticks.smpte == true
   end,
 
   --- Get SMPTE frame rate and ticks per frame.
@@ -80,17 +125,6 @@ MidiFile = class 'MidiFile' {
   get_smpte_timing = function(self)
     if type(self.ticks) == 'table' and self.ticks.smpte then
       return self.ticks.frame_rate, self.ticks.ticks_per_frame
-    elseif self.ticks < 0 then
-      -- Parse from negative value
-      local frame_rate_code = (-self.ticks) >> 8
-      local ticks_per_frame = (-self.ticks) & 0xFF
-      local frame_rate_map = {
-        [24] = 24,
-        [25] = 25,
-        [29] = 29.97,
-        [30] = 30,
-      }
-      return frame_rate_map[frame_rate_code] or frame_rate_code, ticks_per_frame
     end
     return nil
   end,
@@ -102,24 +136,7 @@ MidiFile = class 'MidiFile' {
   -- @param ticks_per_frame number Ticks per frame (sub-frame resolution)
   -- @raise error if frame_rate is invalid
   set_smpte_timing = function(self, frame_rate, ticks_per_frame)
-    local frame_rate_code
-    if frame_rate == 24 then
-      frame_rate_code = 24
-    elseif frame_rate == 25 then
-      frame_rate_code = 25
-    elseif frame_rate == 29.97 then
-      frame_rate_code = 29
-    elseif frame_rate == 30 then
-      frame_rate_code = 30
-    else
-      error(string.format('Invalid SMPTE frame rate: %f', frame_rate))
-    end
-    self.ticks = {
-      smpte = true,
-      frame_rate = frame_rate,
-      ticks_per_frame = ticks_per_frame,
-      encoded = -(frame_rate_code << 8 | ticks_per_frame),
-    }
+    self.ticks = _encode_smpte(frame_rate, ticks_per_frame)
   end,
 
   --- Check if this is format 0 (single track).
@@ -231,22 +248,7 @@ MidiFile = class 'MidiFile' {
     
     -- Check if SMPTE format (MSB set)
     if ticks_raw & 0x8000 ~= 0 then
-      -- Convert to signed 16-bit
-      local signed_ticks = ticks_raw - 65536
-      local frame_rate_code = (-signed_ticks) >> 8
-      local ticks_per_frame = (-signed_ticks) & 0xFF
-      local frame_rate_map = {
-        [24] = 24,
-        [25] = 25,
-        [29] = 29.97,
-        [30] = 30,
-      }
-      midi_file.ticks = {
-        smpte = true,
-        frame_rate = frame_rate_map[frame_rate_code] or frame_rate_code,
-        ticks_per_frame = ticks_per_frame,
-        encoded = signed_ticks,
-      }
+      midi_file.ticks = _decode_smpte(ticks_raw)
     else
       midi_file.ticks = ticks_raw
     end
