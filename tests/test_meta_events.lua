@@ -42,25 +42,25 @@ describe('SetTempoEventTests', function()
   it('should encode tempo data with correct length', function()
     local tempo = SetTempoEvent(0, 0x0F, {})
     tempo:set_tempo(0x07A120)  -- 500,000 in hex
-    expect(#tempo.data).to.be_equal_to(3)
+    expect(#tempo:_get_data()).to.be_equal_to(3)
   end)
 
   it('should encode tempo data with correct first byte', function()
     local tempo = SetTempoEvent(0, 0x0F, {})
     tempo:set_tempo(0x07A120)  -- 500,000 in hex
-    expect(tempo.data[1]).to.be_equal_to(0x07)
+    expect(tempo:_get_data()[1]).to.be_equal_to(0x07)
   end)
 
   it('should encode tempo data with correct second byte', function()
     local tempo = SetTempoEvent(0, 0x0F, {})
     tempo:set_tempo(0x07A120)  -- 500,000 in hex
-    expect(tempo.data[2]).to.be_equal_to(0xA1)
+    expect(tempo:_get_data()[2]).to.be_equal_to(0xA1)
   end)
 
   it('should encode tempo data with correct third byte', function()
     local tempo = SetTempoEvent(0, 0x0F, {})
     tempo:set_tempo(0x07A120)  -- 500,000 in hex
-    expect(tempo.data[3]).to.be_equal_to(0x20)
+    expect(tempo:_get_data()[3]).to.be_equal_to(0x20)
   end)
 end)
 
@@ -124,7 +124,7 @@ describe('TimeSignatureEventTests', function()
   it('should encode denominator as power of 2 for 7/8 time', function()
     local ts = TimeSignatureEvent(0, 0x0F, {})
     ts:set_time_signature(7, 8)  -- 7/8 time
-    expect(ts.data[2]).to.be_equal_to(3)  -- 2^3 = 8
+    expect(ts:_get_data()[2]).to.be_equal_to(3)  -- 2^3 = 8
   end)
 end)
 
@@ -331,6 +331,34 @@ describe('NewMetaEventTests', function()
     local tempo = SetTempoEvent(0, 0x0F, data)
     data[1] = 0xFF
     expect(tempo.data[1]).to.be_equal_to(0x07)
+  end)
+
+  it('should serialize tempo from canonical field after direct mutation', function()
+    local tempo = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})  -- 500000 us
+    tempo.tempo = 1000000  -- Change canonical field directly
+    local data = tempo:_get_data()
+    -- 1000000 = 0x0F4240
+    expect(data[1]).to.be_equal_to(0x0F)
+    expect(data[2]).to.be_equal_to(0x42)
+    expect(data[3]).to.be_equal_to(0x40)
+  end)
+
+  it('should serialize time signature from canonical fields after set', function()
+    local ts = TimeSignatureEvent(0, 0x0F, {4, 2, 24, 8})  -- 4/4
+    ts:set_time_signature(3, 4)  -- Change to 3/4
+    local data = ts:_get_data()
+    expect(data[1]).to.be_equal_to(3)   -- numerator
+    expect(data[2]).to.be_equal_to(2)   -- log2(4) = 2
+    expect(data[3]).to.be_equal_to(24)  -- default clocks
+    expect(data[4]).to.be_equal_to(8)   -- default 32nds
+  end)
+
+  it('should serialize key signature from canonical fields after set', function()
+    local ks = KeySignatureEvent(0, 0x0F, {0, 0})  -- C major
+    ks:set_key_signature(-3, true)  -- Eb minor
+    local data = ks:_get_data()
+    expect(data[1]).to.be_equal_to(253)  -- -3 as unsigned byte
+    expect(data[2]).to.be_equal_to(1)    -- minor
   end)
 end)
 

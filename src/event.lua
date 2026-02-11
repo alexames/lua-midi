@@ -709,6 +709,14 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     self.data = {table.unpack(data)}
   end,
 
+  --- Get the data bytes for this meta event.
+  -- Subclasses with canonical fields override this to compute data from those fields.
+  -- @return table Array of data bytes
+  -- @local
+  _get_data = function(self)
+    return self.data
+  end,
+
   --- Read a meta event from file.
   -- @param file file Binary input file handle
   -- @param time_delta number Delta time already read
@@ -735,7 +743,7 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
   write = function(self, file, context)
     self.Event.write(self, file, context)
     midi_io.writeUInt8be(file, self.meta_command)
-    local data = self.data
+    local data = self:_get_data()
     -- Meta event data length is a variable-length quantity per the MIDI spec
     TimedEvent._write_event_time(file, #data)
     for i=1, #data do
@@ -752,8 +760,9 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
       length = length + 1
       context.previous_command_byte = command_byte
     end
+    local data = self:_get_data()
     -- meta_command byte + VLQ-encoded data length + data bytes
-    length = length + 1 + TimedEvent._vlq_byte_length(#self.data) + #self.data
+    length = length + 1 + TimedEvent._vlq_byte_length(#data) + #data
     return length
   end,
 
@@ -761,9 +770,11 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     if self.class ~= other.class then return false end
     if self.time_delta ~= other.time_delta then return false end
     if self.meta_command ~= other.meta_command then return false end
-    if #self.data ~= #other.data then return false end
-    for i = 1, #self.data do
-      if self.data[i] ~= other.data[i] then return false end
+    local self_data = self:_get_data()
+    local other_data = other:_get_data()
+    if #self_data ~= #other_data then return false end
+    for i = 1, #self_data do
+      if self_data[i] ~= other_data[i] then return false end
     end
     return true
   end,
@@ -886,6 +897,14 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
     end
   end,
 
+  _get_data = function(self)
+    return {
+      (self.tempo >> 16) & 0xFF,
+      (self.tempo >> 8) & 0xFF,
+      self.tempo & 0xFF,
+    }
+  end,
+
   --- Get tempo in microseconds per quarter note.
   -- @return number Tempo in microseconds
   get_tempo = function(self)
@@ -893,16 +912,10 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   end,
 
   --- Set tempo in microseconds per quarter note.
-  -- Updates both the canonical `tempo` field and the raw `data` bytes.
   -- @function SetTempoEvent:set_tempo
   -- @param microseconds_per_quarter number Tempo value
   set_tempo = function(self, microseconds_per_quarter)
     self.tempo = microseconds_per_quarter
-    self.data = {
-      (microseconds_per_quarter >> 16) & 0xFF,
-      (microseconds_per_quarter >> 8) & 0xFF,
-      microseconds_per_quarter & 0xFF,
-    }
   end,
 
   --- Get tempo in beats per minute.
@@ -920,10 +933,9 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
 
   __tostring = function(self)
     local argument_strings = { self.time_delta, self.channel }
-    if self.data then
-      for i = 1, #self.data do
-        table.insert(argument_strings, self.data[i])
-      end
+    local data = self:_get_data()
+    for i = 1, #data do
+      table.insert(argument_strings, data[i])
     end
     return string.format('%s(%s)', self.class.__name, table.concat(argument_strings, ', '))
   end,
@@ -958,6 +970,10 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
     end
   end,
 
+  _get_data = function(self)
+    return { self.hours, self.minutes, self.seconds, self.frames, self.fractional_frames }
+  end,
+
   --- Get SMPTE offset components.
   -- @return table Table with hours, minutes, seconds, frames, fractional_frames
   get_offset = function(self)
@@ -971,7 +987,6 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   end,
 
   --- Set SMPTE offset components.
-  -- Updates both canonical named fields and raw `data` bytes.
   -- @function SMPTEOffsetEvent:set_offset
   -- @param hours number Hours (0-23)
   -- @param minutes number Minutes (0-59)
@@ -984,7 +999,6 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
     self.seconds = seconds
     self.frames = frames
     self.fractional_frames = fractional_frames or 0
-    self.data = { self.hours, self.minutes, self.seconds, self.frames, self.fractional_frames }
   end,
 }
 
@@ -1026,8 +1040,17 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
     }
   end,
 
+  _get_data = function(self)
+    local denominator_power = math.floor(math.log(self.denominator) / math.log(2))
+    return {
+      self.numerator,
+      denominator_power,
+      self.clocks_per_metronome_click,
+      self.thirty_seconds_per_quarter,
+    }
+  end,
+
   --- Set time signature.
-  -- Updates both canonical named fields and raw `data` bytes.
   -- @function TimeSignatureEvent:set_time_signature
   -- @param numerator number Beats per measure (e.g., 4 for 4/4)
   -- @param denominator number Note value per beat (must be power of 2, e.g., 4 for quarter note)
@@ -1038,14 +1061,6 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
     self.denominator = denominator
     self.clocks_per_metronome_click = clocks_per_click or 24
     self.thirty_seconds_per_quarter = thirty_seconds_per_quarter or 8
-    -- Denominator must be a power of 2
-    local denominator_power = math.floor(math.log(denominator) / math.log(2))
-    self.data = {
-      self.numerator,
-      denominator_power,
-      self.clocks_per_metronome_click,
-      self.thirty_seconds_per_quarter,
-    }
   end,
 }
 
@@ -1084,18 +1099,20 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
     }
   end,
 
+  _get_data = function(self)
+    -- Convert from signed to unsigned for raw bytes
+    local sf = self.sharps_flats
+    if sf < 0 then sf = sf + 256 end
+    return { sf, self.is_minor and 1 or 0 }
+  end,
+
   --- Set key signature.
-  -- Updates both canonical named fields and raw `data` bytes.
   -- @function KeySignatureEvent:set_key_signature
   -- @param sharps_flats number Number of sharps (+) or flats (-), from -7 to +7
   -- @param is_minor boolean True for minor key, false for major
   set_key_signature = function(self, sharps_flats, is_minor)
     self.sharps_flats = sharps_flats
     self.is_minor = is_minor
-    -- Convert from signed to unsigned for raw bytes
-    local sf = sharps_flats
-    if sf < 0 then sf = sf + 256 end
-    self.data = { sf, is_minor and 1 or 0 }
   end,
 }
 
