@@ -49,9 +49,9 @@ instrument = llx.enum 'instrument' {
   'rock_organ',
   'church_organ',
   'reed_organ',
-  'accoridan',
+  'accordion',
   'harmonica',
-  'tango_accordian',
+  'tango_accordion',
 
   -- Guitar
   'acoustic_guitar_nylon',
@@ -65,8 +65,8 @@ instrument = llx.enum 'instrument' {
 
   -- Bass
   'acoustic_bass',
-  'electric_bassfinger',
-  'electric_basspick',
+  'electric_bass_finger',
+  'electric_bass_pick',
   'fretless_bass',
   'slap_bass_1',
   'slap_bass_2',
@@ -119,7 +119,7 @@ instrument = llx.enum 'instrument' {
   'recorder',
   'pan_flute',
   'blown_bottle',
-  'skakuhachi',
+  'shakuhachi',
   'whistle',
   'ocarina',
 
