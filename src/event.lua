@@ -870,17 +870,33 @@ EndOfTrackEvent = class 'EndOfTrackEvent' : extends(MetaEvent) {
 SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   meta_command = 0x51,
 
+  --- Create a new SetTempoEvent.
+  -- Parses raw data bytes into the canonical `tempo` field.
+  -- @function SetTempoEvent:__init
+  -- @param time_delta number Delta time in ticks
+  -- @param channel number Must be 0x0F
+  -- @param data table Raw data bytes (3 bytes for tempo)
+  __init = function(self, time_delta, channel, data)
+    self.MetaEvent.__init(self, time_delta, channel, data)
+    if #self.data == 3 then
+      self.tempo = (self.data[1] << 16) | (self.data[2] << 8) | self.data[3]
+    else
+      self.tempo = 0
+    end
+  end,
+
   --- Get tempo in microseconds per quarter note.
-  -- @return number|nil Tempo in microseconds, or nil if data is invalid
+  -- @return number Tempo in microseconds
   get_tempo = function(self)
-    if #self.data ~= 3 then return nil end
-    return (self.data[1] << 16) | (self.data[2] << 8) | self.data[3]
+    return self.tempo
   end,
 
   --- Set tempo in microseconds per quarter note.
+  -- Updates both the canonical `tempo` field and the raw `data` bytes.
   -- @function SetTempoEvent:set_tempo
   -- @param microseconds_per_quarter number Tempo value
   set_tempo = function(self, microseconds_per_quarter)
+    self.tempo = microseconds_per_quarter
     self.data = {
       (microseconds_per_quarter >> 16) & 0xFF,
       (microseconds_per_quarter >> 8) & 0xFF,
@@ -889,11 +905,9 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   end,
 
   --- Get tempo in beats per minute.
-  -- @return number|nil BPM, or nil if data is invalid
+  -- @return number BPM
   get_bpm = function(self)
-    local tempo = self:get_tempo()
-    if not tempo then return nil end
-    return 60000000 / tempo
+    return 60000000 / self.tempo
   end,
 
   --- Set tempo in beats per minute.
@@ -920,20 +934,43 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
 SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   meta_command = 0x54,
 
+  --- Create a new SMPTEOffsetEvent.
+  -- Parses raw data bytes into canonical named fields.
+  -- @function SMPTEOffsetEvent:__init
+  -- @param time_delta number Delta time in ticks
+  -- @param channel number Must be 0x0F
+  -- @param data table Raw data bytes (5 bytes for SMPTE offset)
+  __init = function(self, time_delta, channel, data)
+    self.MetaEvent.__init(self, time_delta, channel, data)
+    if #self.data == 5 then
+      self.hours = self.data[1]
+      self.minutes = self.data[2]
+      self.seconds = self.data[3]
+      self.frames = self.data[4]
+      self.fractional_frames = self.data[5]
+    else
+      self.hours = 0
+      self.minutes = 0
+      self.seconds = 0
+      self.frames = 0
+      self.fractional_frames = 0
+    end
+  end,
+
   --- Get SMPTE offset components.
-  -- @return table|nil Table with hours, minutes, seconds, frames, fractional_frames, or nil if invalid
+  -- @return table Table with hours, minutes, seconds, frames, fractional_frames
   get_offset = function(self)
-    if #self.data ~= 5 then return nil end
     return {
-      hours = self.data[1],
-      minutes = self.data[2],
-      seconds = self.data[3],
-      frames = self.data[4],
-      fractional_frames = self.data[5],
+      hours = self.hours,
+      minutes = self.minutes,
+      seconds = self.seconds,
+      frames = self.frames,
+      fractional_frames = self.fractional_frames,
     }
   end,
 
   --- Set SMPTE offset components.
+  -- Updates both canonical named fields and raw `data` bytes.
   -- @function SMPTEOffsetEvent:set_offset
   -- @param hours number Hours (0-23)
   -- @param minutes number Minutes (0-59)
@@ -941,7 +978,12 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   -- @param frames number Frames (0-29)
   -- @param fractional_frames number Sub-frames (default 0)
   set_offset = function(self, hours, minutes, seconds, frames, fractional_frames)
-    self.data = { hours, minutes, seconds, frames, fractional_frames or 0 }
+    self.hours = hours
+    self.minutes = minutes
+    self.seconds = seconds
+    self.frames = frames
+    self.fractional_frames = fractional_frames or 0
+    self.data = { self.hours, self.minutes, self.seconds, self.frames, self.fractional_frames }
   end,
 }
 
@@ -951,32 +993,57 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
 TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   meta_command = 0x58,
 
+  --- Create a new TimeSignatureEvent.
+  -- Parses raw data bytes into canonical named fields.
+  -- @function TimeSignatureEvent:__init
+  -- @param time_delta number Delta time in ticks
+  -- @param channel number Must be 0x0F
+  -- @param data table Raw data bytes (4 bytes for time signature)
+  __init = function(self, time_delta, channel, data)
+    self.MetaEvent.__init(self, time_delta, channel, data)
+    if #self.data == 4 then
+      self.numerator = self.data[1]
+      self.denominator = 2 ^ self.data[2]
+      self.clocks_per_metronome_click = self.data[3]
+      self.thirty_seconds_per_quarter = self.data[4]
+    else
+      self.numerator = 4
+      self.denominator = 4
+      self.clocks_per_metronome_click = 24
+      self.thirty_seconds_per_quarter = 8
+    end
+  end,
+
   --- Get time signature components.
-  -- @return table|nil Table with numerator, denominator, clocks_per_metronome_click, thirty_seconds_per_quarter, or nil if invalid
+  -- @return table Table with numerator, denominator, clocks_per_metronome_click, thirty_seconds_per_quarter
   get_time_signature = function(self)
-    if #self.data ~= 4 then return nil end
     return {
-      numerator = self.data[1],
-      denominator = 2 ^ self.data[2],
-      clocks_per_metronome_click = self.data[3],
-      thirty_seconds_per_quarter = self.data[4],
+      numerator = self.numerator,
+      denominator = self.denominator,
+      clocks_per_metronome_click = self.clocks_per_metronome_click,
+      thirty_seconds_per_quarter = self.thirty_seconds_per_quarter,
     }
   end,
 
   --- Set time signature.
+  -- Updates both canonical named fields and raw `data` bytes.
   -- @function TimeSignatureEvent:set_time_signature
   -- @param numerator number Beats per measure (e.g., 4 for 4/4)
   -- @param denominator number Note value per beat (must be power of 2, e.g., 4 for quarter note)
   -- @param clocks_per_click number MIDI clocks per metronome click (default 24)
   -- @param thirty_seconds_per_quarter number 32nd notes per quarter note (default 8)
   set_time_signature = function(self, numerator, denominator, clocks_per_click, thirty_seconds_per_quarter)
+    self.numerator = numerator
+    self.denominator = denominator
+    self.clocks_per_metronome_click = clocks_per_click or 24
+    self.thirty_seconds_per_quarter = thirty_seconds_per_quarter or 8
     -- Denominator must be a power of 2
     local denominator_power = math.floor(math.log(denominator) / math.log(2))
     self.data = {
-      numerator,
+      self.numerator,
       denominator_power,
-      clocks_per_click or 24,
-      thirty_seconds_per_quarter or 8,
+      self.clocks_per_metronome_click,
+      self.thirty_seconds_per_quarter,
     }
   end,
 }
@@ -987,31 +1054,46 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
 KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
   meta_command = 0x59,
 
-  --- Get key signature components.
-  -- @return table|nil Table with sharps_flats (-7 to +7) and is_minor (boolean), or nil if invalid
-  get_key_signature = function(self)
-    if #self.data ~= 2 then return nil end
-    local sharps_flats = self.data[1]
-    -- Convert from unsigned to signed
-    if sharps_flats > 127 then
-      sharps_flats = sharps_flats - 256
+  --- Create a new KeySignatureEvent.
+  -- Parses raw data bytes into canonical named fields.
+  -- @function KeySignatureEvent:__init
+  -- @param time_delta number Delta time in ticks
+  -- @param channel number Must be 0x0F
+  -- @param data table Raw data bytes (2 bytes for key signature)
+  __init = function(self, time_delta, channel, data)
+    self.MetaEvent.__init(self, time_delta, channel, data)
+    if #self.data == 2 then
+      local sf = self.data[1]
+      -- Convert from unsigned to signed
+      if sf > 127 then sf = sf - 256 end
+      self.sharps_flats = sf
+      self.is_minor = self.data[2] == 1
+    else
+      self.sharps_flats = 0
+      self.is_minor = false
     end
+  end,
+
+  --- Get key signature components.
+  -- @return table Table with sharps_flats (-7 to +7) and is_minor (boolean)
+  get_key_signature = function(self)
     return {
-      sharps_flats = sharps_flats,  -- -7 (7 flats) to +7 (7 sharps)
-      is_minor = self.data[2] == 1,
+      sharps_flats = self.sharps_flats,
+      is_minor = self.is_minor,
     }
   end,
 
   --- Set key signature.
+  -- Updates both canonical named fields and raw `data` bytes.
   -- @function KeySignatureEvent:set_key_signature
   -- @param sharps_flats number Number of sharps (+) or flats (-), from -7 to +7
   -- @param is_minor boolean True for minor key, false for major
   set_key_signature = function(self, sharps_flats, is_minor)
-    -- Convert from signed to unsigned
+    self.sharps_flats = sharps_flats
+    self.is_minor = is_minor
+    -- Convert from signed to unsigned for raw bytes
     local sf = sharps_flats
-    if sf < 0 then
-      sf = sf + 256
-    end
+    if sf < 0 then sf = sf + 256 end
     self.data = { sf, is_minor and 1 or 0 }
   end,
 }
