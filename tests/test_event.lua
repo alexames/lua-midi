@@ -283,6 +283,78 @@ describe('LargeDeltaTimeRoundTripTests', function()
   end)
 end)
 
+describe('EqualityTests', function()
+  it('should consider identical NoteBeginEvents equal', function()
+    local a = NoteBeginEvent(0, 0, 60, 100)
+    local b = NoteBeginEvent(0, 0, 60, 100)
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider NoteBeginEvents with different fields unequal', function()
+    local a = NoteBeginEvent(0, 0, 60, 100)
+    local b = NoteBeginEvent(0, 0, 60, 127)
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider NoteBeginEvent and NoteEndEvent unequal', function()
+    local a = NoteBeginEvent(0, 0, 60, 100)
+    local b = NoteEndEvent(0, 0, 60, 100)
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider identical SetTempoEvents equal', function()
+    local a = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    local b = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider SetTempoEvents with different data unequal', function()
+    local a = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x20})
+    local b = SetTempoEvent(0, 0x0F, {0x07, 0xA1, 0x21})
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider identical EndOfTrackEvents equal', function()
+    local a = EndOfTrackEvent(0, 0x0F, {})
+    local b = EndOfTrackEvent(0, 0x0F, {})
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider identical ProgramChangeEvents equal', function()
+    local a = ProgramChangeEvent(0, 3, 42)
+    local b = ProgramChangeEvent(0, 3, 42)
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider ProgramChangeEvents with different channels unequal', function()
+    local a = ProgramChangeEvent(0, 3, 42)
+    local b = ProgramChangeEvent(0, 5, 42)
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider events equal after write-read round-trip', function()
+    local mf = MidiFile{format = 1, ticks = 96}
+    local original_events = {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(96, 0, 60, 0),
+      EndOfTrackEvent(0, 0x0F, {}),
+    }
+    local track = Track(original_events)
+    table.insert(mf.tracks, track)
+
+    local bytes = mf:__tobytes()
+    local tmp = io.tmpfile()
+    tmp:write(bytes)
+    tmp:seek('set', 0)
+    local parsed = MidiFile.read(tmp)
+    tmp:close()
+
+    for i, original in ipairs(original_events) do
+      expect(parsed.tracks[1].events[i] == original).to.be_truthy()
+    end
+  end)
+end)
+
 describe('MalformedInputTests', function()
   it('should error on invalid MIDI header', function()
     local tmp = io.tmpfile()

@@ -4,6 +4,11 @@
 local unit = require 'llx.unit'
 
 local MidiFile = require 'lua-midi.midi_file'.MidiFile
+local Track = require 'lua-midi.track'.Track
+local event = require 'lua-midi.event'
+local NoteBeginEvent = event.NoteBeginEvent
+local NoteEndEvent = event.NoteEndEvent
+local EndOfTrackEvent = event.EndOfTrackEvent
 
 _ENV = unit.create_test_env(_ENV)
 
@@ -75,6 +80,83 @@ describe('MidiFileTests', function()
     expect(str:match('MidiFile')).to.be_truthy()
     expect(str:match('SMPTE')).to.be_truthy()
     expect(str:match('25')).to.be_truthy()
+  end)
+end)
+
+describe('MidiFileEqualityTests', function()
+  it('should consider identical MidiFiles equal', function()
+    local a = MidiFile(1, 96)
+    local b = MidiFile(1, 96)
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider MidiFiles with different formats unequal', function()
+    local a = MidiFile(0, 96)
+    local b = MidiFile(1, 96)
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider MidiFiles with different ticks unequal', function()
+    local a = MidiFile(1, 96)
+    local b = MidiFile(1, 480)
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider MidiFiles with identical tracks equal', function()
+    local a = MidiFile(1, 96)
+    table.insert(a.tracks, Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(96, 0, 60, 0),
+      EndOfTrackEvent(0, 0x0F, {}),
+    })
+    local b = MidiFile(1, 96)
+    table.insert(b.tracks, Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(96, 0, 60, 0),
+      EndOfTrackEvent(0, 0x0F, {}),
+    })
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider MidiFiles with different track counts unequal', function()
+    local a = MidiFile(1, 96)
+    table.insert(a.tracks, Track { NoteBeginEvent(0, 0, 60, 100) })
+    local b = MidiFile(1, 96)
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider SMPTE MidiFiles with identical timing equal', function()
+    local a = MidiFile(1, 96)
+    a:set_smpte_timing(25, 40)
+    local b = MidiFile(1, 96)
+    b:set_smpte_timing(25, 40)
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider SMPTE MidiFiles with different frame rates unequal', function()
+    local a = MidiFile(1, 96)
+    a:set_smpte_timing(25, 40)
+    local b = MidiFile(1, 96)
+    b:set_smpte_timing(30, 40)
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider MidiFile equal after write-read round-trip', function()
+    local original = MidiFile{format = 1, ticks = 96}
+    table.insert(original.tracks, Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(96, 0, 60, 0),
+      EndOfTrackEvent(0, 0x0F, {}),
+    })
+
+    local bytes = original:__tobytes()
+    local tmp = io.tmpfile()
+    tmp:write(bytes)
+    tmp:seek('set', 0)
+    local parsed = MidiFile.read(tmp)
+    tmp:close()
+
+    expect(original == parsed).to.be_truthy()
   end)
 end)
 

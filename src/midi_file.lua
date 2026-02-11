@@ -340,6 +340,29 @@ MidiFile = class 'MidiFile' {
       self.format, ticks_str, table.concat(tracks_strings, ', '))
   end,
 
+  --- Equality comparison for MIDI files.
+  -- Two MIDI files are equal if they have the same format, ticks, and tracks.
+  -- @param other MidiFile The MIDI file to compare with
+  -- @return boolean True if equal
+  __eq = function(self, other)
+    if self.format ~= other.format then return false end
+    -- Compare ticks (handle SMPTE table case)
+    if type(self.ticks) ~= type(other.ticks) then return false end
+    if type(self.ticks) == 'table' then
+      if self.ticks.smpte ~= other.ticks.smpte then return false end
+      if self.ticks.frame_rate ~= other.ticks.frame_rate then return false end
+      if self.ticks.ticks_per_frame ~= other.ticks.ticks_per_frame then return false end
+    else
+      if self.ticks ~= other.ticks then return false end
+    end
+    -- Compare tracks
+    if #self.tracks ~= #other.tracks then return false end
+    for i = 1, #self.tracks do
+      if self.tracks[i] ~= other.tracks[i] then return false end
+    end
+    return true
+  end,
+
   --- Returns the binary contents of the MIDI file as a Lua string.
   -- Useful for in-memory manipulation or network transmission.
   -- @return string Binary MIDI file data

@@ -5,6 +5,7 @@ local unit = require 'llx.unit'
 
 local Track = require 'lua-midi.track'.Track
 local NoteBeginEvent = require 'lua-midi.event'.NoteBeginEvent
+local NoteEndEvent = require 'lua-midi.event'.NoteEndEvent
 
 _ENV = unit.create_test_env(_ENV)
 
@@ -45,6 +46,39 @@ describe('TrackTests', function()
     expect(out:byte(8)).to.be_equal_to(4)
     -- Total output: 4 (MTrk) + 4 (length) + 4 (event) = 12 bytes
     expect(#out).to.be_equal_to(12)
+  end)
+end)
+
+describe('TrackEqualityTests', function()
+  it('should consider identical tracks equal', function()
+    local a = Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(96, 0, 60, 0),
+    }
+    local b = Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(96, 0, 60, 0),
+    }
+    expect(a == b).to.be_truthy()
+  end)
+
+  it('should consider empty tracks equal', function()
+    expect(Track() == Track()).to.be_truthy()
+  end)
+
+  it('should consider tracks with different events unequal', function()
+    local a = Track { NoteBeginEvent(0, 0, 60, 100) }
+    local b = Track { NoteBeginEvent(0, 0, 60, 127) }
+    expect(a == b).to.be_falsy()
+  end)
+
+  it('should consider tracks with different lengths unequal', function()
+    local a = Track { NoteBeginEvent(0, 0, 60, 100) }
+    local b = Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(96, 0, 60, 0),
+    }
+    expect(a == b).to.be_falsy()
   end)
 end)
 

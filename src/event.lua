@@ -219,6 +219,22 @@ Event = class 'Event' {
     return length
   end,
 
+  --- Equality comparison for channel voice events.
+  -- Two events are equal if they have the same class, time delta, channel, and schema field values.
+  -- @param other Event The event to compare with
+  -- @return boolean True if equal
+  __eq = function(self, other)
+    if self.class ~= other.class then return false end
+    if self.time_delta ~= other.time_delta then return false end
+    if self.channel ~= other.channel then return false end
+    if self.schema then
+      for _, field in ipairs(self.schema) do
+        if self[field] ~= other[field] then return false end
+      end
+    end
+    return true
+  end,
+
   --- String representation of the event for debugging/logging.
   -- @return string Human-readable event representation
   __tostring = function(self)
@@ -434,6 +450,16 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
     return TimedEvent._vlq_byte_length(self.time_delta) + 1 + #self.data + 1
   end,
 
+  __eq = function(self, other)
+    if self.class ~= other.class then return false end
+    if self.time_delta ~= other.time_delta then return false end
+    if #self.data ~= #other.data then return false end
+    for i = 1, #self.data do
+      if self.data[i] ~= other.data[i] then return false end
+    end
+    return true
+  end,
+
   __tostring = function(self)
     return string.format('SystemExclusiveEvent(%d, %d bytes)', self.time_delta, #self.data)
   end,
@@ -469,6 +495,13 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
   _byte_length = function(self, context)
     -- VLQ time delta + status byte + data byte
     return TimedEvent._vlq_byte_length(self.time_delta) + 2
+  end,
+
+  __eq = function(self, other)
+    return self.class == other.class
+       and self.time_delta == other.time_delta
+       and self.message_type == other.message_type
+       and self.values == other.values
   end,
 
   __tostring = function(self)
@@ -507,6 +540,12 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
     return TimedEvent._vlq_byte_length(self.time_delta) + 3
   end,
 
+  __eq = function(self, other)
+    return self.class == other.class
+       and self.time_delta == other.time_delta
+       and self.position == other.position
+  end,
+
   __tostring = function(self)
     return string.format('SongPositionPointerEvent(%d, position=%d)', self.time_delta, self.position)
   end,
@@ -539,6 +578,12 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
     return TimedEvent._vlq_byte_length(self.time_delta) + 2
   end,
 
+  __eq = function(self, other)
+    return self.class == other.class
+       and self.time_delta == other.time_delta
+       and self.song_number == other.song_number
+  end,
+
   __tostring = function(self)
     return string.format('SongSelectEvent(%d, song=%d)', self.time_delta, self.song_number)
   end,
@@ -568,6 +613,10 @@ local function _simple_system_event(name, status_byte)
     _byte_length = function(self, context)
       -- VLQ time delta + status byte
       return TimedEvent._vlq_byte_length(self.time_delta) + 1
+    end,
+
+    __eq = function(self, other)
+      return self.class == other.class and self.time_delta == other.time_delta
     end,
 
     __tostring = function(self)
@@ -685,6 +734,17 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
     -- meta_command byte + VLQ-encoded data length + data bytes
     length = length + 1 + TimedEvent._vlq_byte_length(#self.data) + #self.data
     return length
+  end,
+
+  __eq = function(self, other)
+    if self.class ~= other.class then return false end
+    if self.time_delta ~= other.time_delta then return false end
+    if self.meta_command ~= other.meta_command then return false end
+    if #self.data ~= #other.data then return false end
+    for i = 1, #self.data do
+      if self.data[i] ~= other.data[i] then return false end
+    end
+    return true
   end,
 
   __tostring = Event.__tostring,

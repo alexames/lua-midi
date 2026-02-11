@@ -89,6 +89,18 @@ Track = class 'Track' {
     end
   end,
 
+  --- Equality comparison for tracks.
+  -- Two tracks are equal if they have the same number of events and all events are equal.
+  -- @param other Track The track to compare with
+  -- @return boolean True if equal
+  __eq = function(self, other)
+    if #self.events ~= #other.events then return false end
+    for i = 1, #self.events do
+      if self.events[i] ~= other.events[i] then return false end
+    end
+    return true
+  end,
+
   --- Returns a human-readable string representation of the track.
   -- Includes all events in order.
   -- @return string String representation of the track
