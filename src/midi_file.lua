@@ -46,39 +46,54 @@ local _code_to_frame_rate = {
   [30] = 30,
 }
 
---- Decode a raw 16-bit ticks value into a SMPTE timing table.
+--- SMPTE time division.
+-- Represents SMPTE-based timing (frames per second + ticks per frame)
+-- as a proper value type with equality, cloning, and string conversion.
+-- @type SmpteDivision
+-- @field frame_rate number Frame rate (24, 25, 29.97, or 30)
+-- @field ticks_per_frame number Ticks per frame (sub-frame resolution)
+-- @field encoded number Signed 16-bit encoding for the MIDI header
+SmpteDivision = class 'SmpteDivision' {
+  --- Create a new SmpteDivision.
+  -- @function SmpteDivision:__init
+  -- @param frame_rate number Frame rate (24, 25, 29.97, or 30)
+  -- @param ticks_per_frame number Ticks per frame
+  -- @raise error if frame_rate is not a valid SMPTE rate
+  __init = function(self, frame_rate, ticks_per_frame)
+    local frame_rate_code = _frame_rate_to_code[frame_rate]
+    if not frame_rate_code then
+      error(string.format('Invalid SMPTE frame rate: %g', frame_rate))
+    end
+    self.frame_rate = frame_rate
+    self.ticks_per_frame = ticks_per_frame
+    self.encoded = -(frame_rate_code << 8 | ticks_per_frame)
+  end,
+
+  __eq = function(self, other)
+    return self.class == other.class
+       and self.frame_rate == other.frame_rate
+       and self.ticks_per_frame == other.ticks_per_frame
+  end,
+
+  clone = function(self)
+    return SmpteDivision(self.frame_rate, self.ticks_per_frame)
+  end,
+
+  __tostring = function(self)
+    return string.format('SMPTE(%g fps, %d tpf)', self.frame_rate, self.ticks_per_frame)
+  end,
+}
+
+--- Decode a raw 16-bit ticks value into a SmpteDivision.
 -- @param ticks_raw number The raw unsigned 16-bit value from the MIDI header
--- @return table SMPTE timing table with smpte, frame_rate, ticks_per_frame, encoded
+-- @return SmpteDivision SMPTE timing object
 -- @local
 local function _decode_smpte(ticks_raw)
   local signed_ticks = ticks_raw - 65536
   local frame_rate_code = (-signed_ticks) >> 8
   local ticks_per_frame = (-signed_ticks) & 0xFF
-  return {
-    smpte = true,
-    frame_rate = _code_to_frame_rate[frame_rate_code] or frame_rate_code,
-    ticks_per_frame = ticks_per_frame,
-    encoded = signed_ticks,
-  }
-end
-
---- Encode a SMPTE frame rate and ticks-per-frame into a SMPTE timing table.
--- @param frame_rate number Frame rate (24, 25, 29.97, or 30)
--- @param ticks_per_frame number Ticks per frame
--- @return table SMPTE timing table
--- @raise error if frame_rate is invalid
--- @local
-local function _encode_smpte(frame_rate, ticks_per_frame)
-  local frame_rate_code = _frame_rate_to_code[frame_rate]
-  if not frame_rate_code then
-    error(string.format('Invalid SMPTE frame rate: %g', frame_rate))
-  end
-  return {
-    smpte = true,
-    frame_rate = frame_rate,
-    ticks_per_frame = ticks_per_frame,
-    encoded = -(frame_rate_code << 8 | ticks_per_frame),
-  }
+  local frame_rate = _code_to_frame_rate[frame_rate_code] or frame_rate_code
+  return SmpteDivision(frame_rate, ticks_per_frame)
 end
 
 --- MidiFile class for reading and writing Standard MIDI Files (SMF).
@@ -116,14 +131,14 @@ MidiFile = class 'MidiFile' {
   -- SMPTE timing uses absolute time (frames) rather than musical time (beats).
   -- @return boolean True if SMPTE timing is used
   is_smpte = function(self)
-    return type(self.ticks) == 'table' and self.ticks.smpte == true
+    return SmpteDivision:__isinstance(self.ticks)
   end,
 
   --- Get SMPTE frame rate and ticks per frame.
   -- @return number|nil Frame rate (24, 25, 29.97, or 30), or nil if not SMPTE
   -- @return number|nil Ticks per frame, or nil if not SMPTE
   get_smpte_timing = function(self)
-    if type(self.ticks) == 'table' and self.ticks.smpte then
+    if SmpteDivision:__isinstance(self.ticks) then
       return self.ticks.frame_rate, self.ticks.ticks_per_frame
     end
     return nil
@@ -136,7 +151,7 @@ MidiFile = class 'MidiFile' {
   -- @param ticks_per_frame number Ticks per frame (sub-frame resolution)
   -- @raise error if frame_rate is invalid
   set_smpte_timing = function(self, frame_rate, ticks_per_frame)
-    self.ticks = _encode_smpte(frame_rate, ticks_per_frame)
+    self.ticks = SmpteDivision(frame_rate, ticks_per_frame)
   end,
 
   --- Check if this is format 0 (single track).
@@ -291,11 +306,9 @@ MidiFile = class 'MidiFile' {
     midi_io.writeUInt16be(file, #self.tracks)
     
     -- Write ticks (handle SMPTE format)
-    if type(self.ticks) == 'table' and self.ticks.smpte then
-      -- Convert to unsigned 16-bit for writing
-      local signed_value = self.ticks.encoded
-      local unsigned_value = signed_value < 0 and (signed_value + 65536) or signed_value
-      midi_io.writeUInt16be(file, unsigned_value)
+    if SmpteDivision:__isinstance(self.ticks) then
+      -- Convert signed encoding to unsigned 16-bit for writing
+      midi_io.writeUInt16be(file, self.ticks.encoded + 65536)
     else
       midi_io.writeUInt16be(file, self.ticks)
     end
@@ -330,13 +343,7 @@ MidiFile = class 'MidiFile' {
     for i, track in ipairs(self.tracks) do
       tracks_strings[i] = tostring(track)
     end
-    local ticks_str
-    if type(self.ticks) == 'table' and self.ticks.smpte then
-      ticks_str = string.format('SMPTE(%g fps, %d tpf)',
-                                self.ticks.frame_rate, self.ticks.ticks_per_frame)
-    else
-      ticks_str = tostring(self.ticks)
-    end
+    local ticks_str = tostring(self.ticks)
     return string.format(
       'MidiFile{format=%d, ticks=%s, tracks={%s}}',
       self.format, ticks_str, table.concat(tracks_strings, ', '))
@@ -349,15 +356,7 @@ MidiFile = class 'MidiFile' {
   __eq = function(self, other)
     if self.class ~= other.class then return false end
     if self.format ~= other.format then return false end
-    -- Compare ticks (handle SMPTE table case)
-    if type(self.ticks) ~= type(other.ticks) then return false end
-    if type(self.ticks) == 'table' then
-      if self.ticks.smpte ~= other.ticks.smpte then return false end
-      if self.ticks.frame_rate ~= other.ticks.frame_rate then return false end
-      if self.ticks.ticks_per_frame ~= other.ticks.ticks_per_frame then return false end
-    else
-      if self.ticks ~= other.ticks then return false end
-    end
+    if self.ticks ~= other.ticks then return false end
     -- Compare tracks
     if #self.tracks ~= #other.tracks then return false end
     for i = 1, #self.tracks do
@@ -374,10 +373,7 @@ MidiFile = class 'MidiFile' {
     for _, track in ipairs(self.tracks) do
       table.insert(cloned_tracks, track:clone())
     end
-    local ticks = self.ticks
-    if type(ticks) == 'table' then
-      ticks = _encode_smpte(ticks.frame_rate, ticks.ticks_per_frame)
-    end
+    local ticks = SmpteDivision:__isinstance(self.ticks) and self.ticks:clone() or self.ticks
     return MidiFile(self.format, ticks, cloned_tracks)
   end,
 
