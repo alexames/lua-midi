@@ -69,13 +69,17 @@ TimedEvent = class 'TimedEvent' {
   -- @param time_delta number Time delta value to write
   -- @local
   _write_event_time = function(file, time_delta)
-    -- Emit continuation bytes as needed (MSB = 1)
-    if time_delta > (0x7F * 0x7F * 0x7F) then
-      midi_io.writeUInt8be(file, (time_delta >> 21) | 0x80)
-    elseif time_delta > (0x7F * 0x7F) then
-      midi_io.writeUInt8be(file, (time_delta >> 14) | 0x80)
-    elseif time_delta > (0x7F) then
-      midi_io.writeUInt8be(file, (time_delta >> 7) | 0x80)
+    -- Emit continuation bytes as needed (MSB = 1).
+    -- Each continuation byte carries 7 bits of the value with MSB set.
+    -- Uses cascading if (not elseif) so all necessary bytes are written.
+    if time_delta > 0x1FFFFF then
+      midi_io.writeUInt8be(file, ((time_delta >> 21) & 0x7F) | 0x80)
+    end
+    if time_delta > 0x3FFF then
+      midi_io.writeUInt8be(file, ((time_delta >> 14) & 0x7F) | 0x80)
+    end
+    if time_delta > 0x7F then
+      midi_io.writeUInt8be(file, ((time_delta >> 7) & 0x7F) | 0x80)
     end
     -- Final byte (MSB = 0)
     midi_io.writeUInt8be(file, time_delta & 0x7F)

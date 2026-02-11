@@ -47,9 +47,9 @@ Track = class 'Track' {
     for i, event in ipairs(self.events) do
       -- Account for the size of the delta time (variable length quantity)
       local time_delta = event.time_delta
-      if time_delta > (0x7F * 0x7F * 0x7F) then
+      if time_delta > 0x1FFFFF then
         length = length + 4
-      elseif time_delta > (0x7F * 0x7F) then
+      elseif time_delta > 0x3FFF then
         length = length + 3
       elseif time_delta > 0x7F then
         length = length + 2

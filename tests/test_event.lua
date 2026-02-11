@@ -108,6 +108,75 @@ describe('ChannelVoiceEventTests', function()
   end)
 end)
 
+describe('VLQRoundTripTests', function()
+  -- Helper: write VLQ then read it back, verifying round-trip
+  local function vlq_round_trip(value)
+    local buffer = {}
+    local pos = 0
+    local file = {
+      write = function(_, s) table.insert(buffer, s) end,
+      read = function(_, n)
+        local joined = table.concat(buffer)
+        local result = joined:sub(pos + 1, pos + n)
+        pos = pos + n
+        return result
+      end,
+    }
+    event.TimedEvent._write_event_time(file, value)
+    local read_back = event.TimedEvent._read_event_time(file)
+    return read_back, table.concat(buffer)
+  end
+
+  it('should round-trip 1-byte VLQ values (0-127)', function()
+    local result, bytes = vlq_round_trip(0)
+    expect(result).to.be_equal_to(0)
+    expect(#bytes).to.be_equal_to(1)
+
+    result, bytes = vlq_round_trip(127)
+    expect(result).to.be_equal_to(127)
+    expect(#bytes).to.be_equal_to(1)
+  end)
+
+  it('should round-trip 2-byte VLQ values (128-16383)', function()
+    local result, bytes = vlq_round_trip(128)
+    expect(result).to.be_equal_to(128)
+    expect(#bytes).to.be_equal_to(2)
+
+    result, bytes = vlq_round_trip(16383)
+    expect(result).to.be_equal_to(16383)
+    expect(#bytes).to.be_equal_to(2)
+  end)
+
+  it('should round-trip 3-byte VLQ values (16384-2097151)', function()
+    local result, bytes = vlq_round_trip(16384)
+    expect(result).to.be_equal_to(16384)
+    expect(#bytes).to.be_equal_to(3)
+
+    result, bytes = vlq_round_trip(2097151)
+    expect(result).to.be_equal_to(2097151)
+    expect(#bytes).to.be_equal_to(3)
+  end)
+
+  it('should round-trip 4-byte VLQ values (2097152+)', function()
+    local result, bytes = vlq_round_trip(2097152)
+    expect(result).to.be_equal_to(2097152)
+    expect(#bytes).to.be_equal_to(4)
+
+    result, bytes = vlq_round_trip(0x0FFFFFFF)
+    expect(result).to.be_equal_to(0x0FFFFFFF)
+    expect(#bytes).to.be_equal_to(4)
+  end)
+
+  it('should round-trip previous bug boundary values (16130, 16383)', function()
+    -- These values were incorrectly encoded before the VLQ fix
+    local result = vlq_round_trip(16130)
+    expect(result).to.be_equal_to(16130)
+
+    result = vlq_round_trip(16383)
+    expect(result).to.be_equal_to(16383)
+  end)
+end)
+
 describe('RoundTripTests', function()
   it('should round-trip a MIDI file with note events through write and read', function()
     local mf = MidiFile{format = 1, ticks = 96}
@@ -169,6 +238,48 @@ describe('RoundTripTests', function()
 
     local parsed_tempo = parsed.tracks[1].events[1]
     expect(parsed_tempo:get_tempo()).to.be_equal_to(500000)
+  end)
+end)
+
+describe('LargeDeltaTimeRoundTripTests', function()
+  it('should round-trip a MIDI file with a large delta time (16384 ticks)', function()
+    local mf = MidiFile{format = 1, ticks = 96}
+    local track = Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(16384, 0, 60, 0),
+      EndOfTrackEvent(0, 0x0F, {}),
+    }
+    table.insert(mf.tracks, track)
+
+    local bytes = mf:__tobytes()
+    local tmp = io.tmpfile()
+    tmp:write(bytes)
+    tmp:seek('set', 0)
+    local parsed = MidiFile.read(tmp)
+    tmp:close()
+
+    local e2 = parsed.tracks[1].events[2]
+    expect(e2.time_delta).to.be_equal_to(16384)
+  end)
+
+  it('should round-trip a MIDI file with a very large delta time (2097152 ticks)', function()
+    local mf = MidiFile{format = 1, ticks = 96}
+    local track = Track {
+      NoteBeginEvent(0, 0, 60, 100),
+      NoteEndEvent(2097152, 0, 60, 0),
+      EndOfTrackEvent(0, 0x0F, {}),
+    }
+    table.insert(mf.tracks, track)
+
+    local bytes = mf:__tobytes()
+    local tmp = io.tmpfile()
+    tmp:write(bytes)
+    tmp:seek('set', 0)
+    local parsed = MidiFile.read(tmp)
+    tmp:close()
+
+    local e2 = parsed.tracks[1].events[2]
+    expect(e2.time_delta).to.be_equal_to(2097152)
   end)
 end)
 
