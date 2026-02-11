@@ -101,6 +101,17 @@ Track = class 'Track' {
     return true
   end,
 
+  --- Create an independent copy of this track.
+  -- Clones all events so the copy shares no mutable state.
+  -- @return Track A new track equal to this one
+  clone = function(self)
+    local cloned_events = llx.List{}
+    for _, event in ipairs(self.events) do
+      table.insert(cloned_events, event:clone())
+    end
+    return Track(cloned_events)
+  end,
+
   --- Returns a human-readable string representation of the track.
   -- Includes all events in order.
   -- @return string String representation of the track

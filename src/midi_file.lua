@@ -365,6 +365,21 @@ MidiFile = class 'MidiFile' {
     return true
   end,
 
+  --- Create an independent copy of this MIDI file.
+  -- Clones all tracks and events so the copy shares no mutable state.
+  -- @return MidiFile A new MIDI file equal to this one
+  clone = function(self)
+    local cloned_tracks = llx.List{}
+    for _, track in ipairs(self.tracks) do
+      table.insert(cloned_tracks, track:clone())
+    end
+    local ticks = self.ticks
+    if type(ticks) == 'table' then
+      ticks = _encode_smpte(ticks.frame_rate, ticks.ticks_per_frame)
+    end
+    return MidiFile(self.format, ticks, cloned_tracks)
+  end,
+
   --- Returns the binary contents of the MIDI file as a Lua string.
   -- Useful for in-memory manipulation or network transmission.
   -- @return string Binary MIDI file data

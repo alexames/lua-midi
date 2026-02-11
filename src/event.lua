@@ -237,6 +237,19 @@ Event = class 'Event' {
     return true
   end,
 
+  --- Create an independent copy of this event.
+  -- The copy is equal to the original but shares no mutable state.
+  -- @return Event A new event equal to this one
+  clone = function(self)
+    local args = { self.time_delta, self.channel }
+    if self.schema then
+      for _, field in ipairs(self.schema) do
+        table.insert(args, self[field])
+      end
+    end
+    return self.class(table.unpack(args))
+  end,
+
   --- String representation of the event for debugging/logging.
   -- @return string Human-readable event representation
   __tostring = function(self)
@@ -453,6 +466,10 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
     return self.value == other.value
   end,
 
+  clone = function(self)
+    return PitchWheelChangeEvent(self.time_delta, self.channel, self.value)
+  end,
+
   __tostring = function(self)
     return string.format('%s(%s, %s, %s)', self.class.__name, self.time_delta, self.channel, self.value)
   end,
@@ -516,6 +533,10 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
     return true
   end,
 
+  clone = function(self)
+    return SystemExclusiveEvent(self.time_delta, self.data)
+  end,
+
   __tostring = function(self)
     return string.format('SystemExclusiveEvent(%d, %d bytes)', self.time_delta, #self.data)
   end,
@@ -560,6 +581,10 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
        and self.values == other.values
   end,
 
+  clone = function(self)
+    return MIDITimeCodeQuarterFrameEvent(self.time_delta, self.message_type, self.values)
+  end,
+
   __tostring = function(self)
     return string.format('MIDITimeCodeQuarterFrameEvent(%d, type=%d, values=%d)',
                          self.time_delta, self.message_type, self.values)
@@ -602,6 +627,10 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
        and self.position == other.position
   end,
 
+  clone = function(self)
+    return SongPositionPointerEvent(self.time_delta, self.position)
+  end,
+
   __tostring = function(self)
     return string.format('SongPositionPointerEvent(%d, position=%d)', self.time_delta, self.position)
   end,
@@ -640,6 +669,10 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
        and self.song_number == other.song_number
   end,
 
+  clone = function(self)
+    return SongSelectEvent(self.time_delta, self.song_number)
+  end,
+
   __tostring = function(self)
     return string.format('SongSelectEvent(%d, song=%d)', self.time_delta, self.song_number)
   end,
@@ -673,6 +706,10 @@ local function _simple_system_event(name, status_byte)
 
     __eq = function(self, other)
       return self.class == other.class and self.time_delta == other.time_delta
+    end,
+
+    clone = function(self)
+      return _M[name](self.time_delta)
     end,
 
     __tostring = function(self)
@@ -812,6 +849,10 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
       if self_data[i] ~= other_data[i] then return false end
     end
     return true
+  end,
+
+  clone = function(self)
+    return self.class(self.time_delta, self.channel, self:_get_data())
   end,
 
   __tostring = Event.__tostring,
