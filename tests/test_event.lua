@@ -434,14 +434,24 @@ describe('ConstructorValidationTests', function()
     expect(ok).to.be_falsy()
   end)
 
-  it('should reject PitchWheelChangeEvent with invalid LSB', function()
-    local ok = pcall(function() PitchWheelChangeEvent(0, 0, 128, 64) end)
+  it('should reject PitchWheelChangeEvent with value exceeding 14-bit range', function()
+    local ok = pcall(function() PitchWheelChangeEvent(0, 0, 16384) end)
     expect(ok).to.be_falsy()
   end)
 
-  it('should reject PitchWheelChangeEvent with invalid MSB', function()
-    local ok = pcall(function() PitchWheelChangeEvent(0, 0, 64, 128) end)
+  it('should reject PitchWheelChangeEvent with negative value', function()
+    local ok = pcall(function() PitchWheelChangeEvent(0, 0, -1) end)
     expect(ok).to.be_falsy()
+  end)
+
+  it('should accept PitchWheelChangeEvent at center value', function()
+    local pw = PitchWheelChangeEvent(0, 0, 8192)
+    expect(pw.value).to.be_equal_to(8192)
+  end)
+
+  it('should accept PitchWheelChangeEvent at boundary values', function()
+    PitchWheelChangeEvent(0, 0, 0)
+    PitchWheelChangeEvent(0, 0, 16383)
   end)
 
   it('should accept valid NoteBeginEvent at boundaries', function()

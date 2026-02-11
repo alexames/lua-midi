@@ -178,7 +178,7 @@ Event = class 'Event' {
       return EventType(time_delta, channel, table.unpack(args))
     else
       -- Use custom read function if defined
-      return EventType.read(file, time_delta, channel, context)
+      return EventType.read(file, time_delta, channel, context, event_byte)
     end
   end,
 
@@ -401,27 +401,62 @@ ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event)
 
 --- Pitch Bend event (0xE0).
 -- Changes the pitch of all notes on a channel.
+-- The value is a 14-bit unsigned integer (0-16383) where 8192 is center (no bend).
 -- @type PitchWheelChangeEvent
 -- @field time_delta number Delta time in ticks
 -- @field channel number MIDI channel (0-15)
--- @field bottom number LSB of pitch bend value (0-127)
--- @field top number MSB of pitch bend value (0-127)
+-- @field value number Pitch bend value (0-16383, center = 8192)
 PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
   --- Create a new PitchWheelChangeEvent.
   -- @function PitchWheelChangeEvent:__init
   -- @param time_delta number Delta time in ticks
   -- @param channel number MIDI channel (0-15)
-  -- @param bottom number LSB of pitch bend value (0-127)
-  -- @param top number MSB of pitch bend value (0-127)
-  __init = function(self, time_delta, channel, bottom, top)
+  -- @param value number Pitch bend value (0-16383, center = 8192)
+  __init = function(self, time_delta, channel, value)
     validation.assert_channel(channel)
-    validation.assert_7bit(bottom, 'Pitch bend LSB')
-    validation.assert_7bit(top, 'Pitch bend MSB')
+    validation.assert_pitch_bend(value)
     self.Event.__init(self, time_delta, channel)
-    self.bottom = bottom
-    self.top = top
+    self.value = value
   end,
-  schema = { 'bottom', 'top' },
+
+  read = function(file, time_delta, channel, context, event_byte)
+    local lsb = event_byte or midi_io.readUInt8be(file)
+    local msb = midi_io.readUInt8be(file)
+    return PitchWheelChangeEvent(time_delta, channel, (msb << 7) | lsb)
+  end,
+
+  write = function(self, file, context)
+    TimedEvent._write_event_time(file, self.time_delta)
+    local command_byte = self.command | self.channel
+    if command_byte ~= context.previous_command_byte then
+      midi_io.writeUInt8be(file, command_byte)
+      context.previous_command_byte = command_byte
+    end
+    midi_io.writeUInt8be(file, self.value & 0x7F)
+    midi_io.writeUInt8be(file, (self.value >> 7) & 0x7F)
+  end,
+
+  _byte_length = function(self, context)
+    local length = TimedEvent._vlq_byte_length(self.time_delta)
+    local command_byte = self.command | self.channel
+    if command_byte ~= context.previous_command_byte then
+      length = length + 1
+      context.previous_command_byte = command_byte
+    end
+    return length + 2
+  end,
+
+  __eq = function(self, other)
+    if self.class ~= other.class then return false end
+    if self.time_delta ~= other.time_delta then return false end
+    if self.channel ~= other.channel then return false end
+    return self.value == other.value
+  end,
+
+  __tostring = function(self)
+    return string.format('%s(%s, %s, %s)', self.class.__name, self.time_delta, self.channel, self.value)
+  end,
+
   command = 0xE0,
 }
 
