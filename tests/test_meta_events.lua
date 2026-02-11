@@ -371,4 +371,48 @@ describe('NewMetaEventTests', function()
   end)
 end)
 
+describe('MalformedMetaEventDataTests', function()
+  it('should error on SetTempoEvent with wrong data length', function()
+    local ok = pcall(function() SetTempoEvent(0, 0x0F, {0x07, 0xA1}) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept SetTempoEvent with empty data', function()
+    local t = SetTempoEvent(0, 0x0F, {})
+    expect(t.tempo).to.be_equal_to(500000)
+  end)
+
+  it('should error on TimeSignatureEvent with wrong data length', function()
+    local ok = pcall(function() TimeSignatureEvent(0, 0x0F, {4, 2, 24}) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept TimeSignatureEvent with empty data', function()
+    local ts = TimeSignatureEvent(0, 0x0F, {})
+    expect(ts.numerator).to.be_equal_to(4)
+    expect(ts.denominator).to.be_equal_to(4)
+  end)
+
+  it('should error on KeySignatureEvent with wrong data length', function()
+    local ok = pcall(function() KeySignatureEvent(0, 0x0F, {0}) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept KeySignatureEvent with empty data', function()
+    local ks = KeySignatureEvent(0, 0x0F, {})
+    expect(ks.sharps_flats).to.be_equal_to(0)
+    expect(ks.is_minor).to.be_falsy()
+  end)
+
+  it('should error on SMPTEOffsetEvent with wrong data length', function()
+    local ok = pcall(function() SMPTEOffsetEvent(0, 0x0F, {1, 2, 3}) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept SMPTEOffsetEvent with empty data', function()
+    local s = SMPTEOffsetEvent(0, 0x0F, {})
+    expect(s.hours).to.be_equal_to(0)
+  end)
+end)
+
 run_unit_tests()

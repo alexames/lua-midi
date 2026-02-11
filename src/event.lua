@@ -983,8 +983,10 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
     self.MetaEvent.__init(self, time_delta, channel, data)
     if #self.data == 3 then
       self.tempo = (self.data[1] << 16) | (self.data[2] << 8) | self.data[3]
+    elseif #self.data == 0 then
+      self.tempo = 500000  -- default 120 BPM
     else
-      self.tempo = 0
+      error(string.format('SetTempoEvent expects 0 or 3 data bytes, got %d', #self.data), 2)
     end
   end,
 
@@ -1052,12 +1054,14 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
       self.seconds = self.data[3]
       self.frames = self.data[4]
       self.fractional_frames = self.data[5]
-    else
+    elseif #self.data == 0 then
       self.hours = 0
       self.minutes = 0
       self.seconds = 0
       self.frames = 0
       self.fractional_frames = 0
+    else
+      error(string.format('SMPTEOffsetEvent expects 0 or 5 data bytes, got %d', #self.data), 2)
     end
   end,
 
@@ -1112,11 +1116,13 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
       self.denominator = 2 ^ self.data[2]
       self.clocks_per_metronome_click = self.data[3]
       self.thirty_seconds_per_quarter = self.data[4]
-    else
+    elseif #self.data == 0 then
       self.numerator = 4
       self.denominator = 4
       self.clocks_per_metronome_click = 24
       self.thirty_seconds_per_quarter = 8
+    else
+      error(string.format('TimeSignatureEvent expects 0 or 4 data bytes, got %d', #self.data), 2)
     end
   end,
 
@@ -1175,9 +1181,11 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
       if sf > 127 then sf = sf - 256 end
       self.sharps_flats = sf
       self.is_minor = self.data[2] == 1
-    else
+    elseif #self.data == 0 then
       self.sharps_flats = 0
       self.is_minor = false
+    else
+      error(string.format('KeySignatureEvent expects 0 or 2 data bytes, got %d', #self.data), 2)
     end
   end,
 
