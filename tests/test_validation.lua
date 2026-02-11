@@ -45,6 +45,18 @@ describe('ValidationTests', function()
     expect(err:match('integer')).to.be_truthy()
   end)
 
+  it('should report integer error for out-of-range float 15.5', function()
+    local valid, err = validation.validate_channel(15.5)
+    expect(valid).to.be_falsy()
+    expect(err:match('integer')).to.be_truthy()
+  end)
+
+  it('should report integer error for negative float -0.5', function()
+    local valid, err = validation.validate_note(-0.5)
+    expect(valid).to.be_falsy()
+    expect(err:match('integer')).to.be_truthy()
+  end)
+
   it('should accept note 0 as valid', function()
     expect(validation.validate_note(0)).to.be_truthy()
   end)

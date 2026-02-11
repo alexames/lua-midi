@@ -34,11 +34,11 @@ local function _validate_integer_range(value, name, min, max)
   if type(value) ~= 'number' then
     return false, name .. ' must be a number'
   end
+  if value ~= math.floor(value) then
+    return false, string.format('%s must be an integer, got %g', name, value)
+  end
   if value < min or value > max then
     return false, string.format('%s must be %d-%d, got %d', name, min, max, value)
-  end
-  if value ~= math.floor(value) then
-    return false, string.format('%s must be an integer, got %f', name, value)
   end
   return true
 end
