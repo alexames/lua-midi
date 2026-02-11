@@ -228,4 +228,102 @@ function assert_3bit(value, name)
   if not valid then error(err, 2) end
 end
 
+--- Validate a MIDI tempo value in microseconds per quarter note.
+-- Must fit in 3 bytes (1-16777215).
+-- @param tempo number The tempo value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_tempo(tempo)
+  return _validate_integer_range(tempo, 'Tempo', 1, 0xFFFFFF)
+end
+
+--- Assert that a tempo value is valid, throws error if not.
+-- @param tempo number The tempo value to validate
+-- @raise error if tempo is invalid
+function assert_tempo(tempo)
+  local valid, err = validate_tempo(tempo)
+  if not valid then error(err, 2) end
+end
+
+--- Validate a key signature sharps/flats value (-7 to +7).
+-- @param sharps_flats number Number of sharps (positive) or flats (negative)
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_sharps_flats(sharps_flats)
+  return _validate_integer_range(sharps_flats, 'Sharps/flats', -7, 7)
+end
+
+--- Assert that a sharps/flats value is valid, throws error if not.
+-- @param sharps_flats number The sharps/flats value to validate
+-- @raise error if value is invalid
+function assert_sharps_flats(sharps_flats)
+  local valid, err = validate_sharps_flats(sharps_flats)
+  if not valid then error(err, 2) end
+end
+
+--- Validate that a value is a boolean.
+-- @param value any The value to validate
+-- @param name string Human-readable name for error messages
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_boolean(value, name)
+  if type(value) ~= 'boolean' then
+    return false, (name or 'Value') .. ' must be a boolean'
+  end
+  return true
+end
+
+--- Assert that a value is a boolean, throws error if not.
+-- @param value any The value to validate
+-- @param name string Human-readable name for error messages
+-- @raise error if value is not a boolean
+function assert_boolean(value, name)
+  local valid, err = validate_boolean(value, name)
+  if not valid then error(err, 2) end
+end
+
+--- Validate that a time signature denominator is a power of 2 (1-256).
+-- @param denominator number The denominator to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_denominator(denominator)
+  if type(denominator) ~= 'number' then
+    return false, 'Denominator must be a number'
+  end
+  if denominator ~= math.floor(denominator) then
+    return false, string.format('Denominator must be an integer, got %g', denominator)
+  end
+  if denominator < 1 or denominator > 256 then
+    return false, string.format('Denominator must be 1-256, got %d', denominator)
+  end
+  if denominator & (denominator - 1) ~= 0 then
+    return false, string.format('Denominator must be a power of 2, got %d', denominator)
+  end
+  return true
+end
+
+--- Assert that a time signature denominator is valid, throws error if not.
+-- @param denominator number The denominator to validate
+-- @raise error if denominator is invalid
+function assert_denominator(denominator)
+  local valid, err = validate_denominator(denominator)
+  if not valid then error(err, 2) end
+end
+
+--- Validate a MIDI ticks-per-quarter-note value (1-32767).
+-- @param ticks number The ticks value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_ticks(ticks)
+  return _validate_integer_range(ticks, 'Ticks per quarter note', 1, 0x7FFF)
+end
+
+--- Assert that a ticks-per-quarter-note value is valid, throws error if not.
+-- @param ticks number The ticks value to validate
+-- @raise error if ticks is invalid
+function assert_ticks(ticks)
+  local valid, err = validate_ticks(ticks)
+  if not valid then error(err, 2) end
+end
+
 return _M

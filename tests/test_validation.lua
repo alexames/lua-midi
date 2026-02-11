@@ -301,6 +301,78 @@ describe('AssertValidationTests', function()
     -- Should not throw
     validation.assert_pitch_bend(8192)
   end)
+
+  it('should throw error when assert_tempo is called with zero', function()
+    local success = pcall(function() validation.assert_tempo(0) end)
+    expect(success).to.be_falsy()
+  end)
+
+  it('should not throw when assert_tempo is called with valid tempo', function()
+    validation.assert_tempo(500000)
+  end)
+
+  it('should accept tempo at boundaries', function()
+    validation.assert_tempo(1)
+    validation.assert_tempo(0xFFFFFF)
+  end)
+
+  it('should reject tempo exceeding 3-byte max', function()
+    local success = pcall(function() validation.assert_tempo(0xFFFFFF + 1) end)
+    expect(success).to.be_falsy()
+  end)
+
+  it('should throw error when assert_sharps_flats is called with out-of-range value', function()
+    local success = pcall(function() validation.assert_sharps_flats(8) end)
+    expect(success).to.be_falsy()
+  end)
+
+  it('should not throw when assert_sharps_flats is called with valid value', function()
+    validation.assert_sharps_flats(-7)
+    validation.assert_sharps_flats(0)
+    validation.assert_sharps_flats(7)
+  end)
+
+  it('should throw error when assert_boolean is called with non-boolean', function()
+    local success = pcall(function() validation.assert_boolean(1, 'test') end)
+    expect(success).to.be_falsy()
+  end)
+
+  it('should not throw when assert_boolean is called with boolean', function()
+    validation.assert_boolean(true, 'test')
+    validation.assert_boolean(false, 'test')
+  end)
+
+  it('should throw error when assert_denominator is called with non-power-of-2', function()
+    local success = pcall(function() validation.assert_denominator(3) end)
+    expect(success).to.be_falsy()
+  end)
+
+  it('should throw error when assert_denominator is called with zero', function()
+    local success = pcall(function() validation.assert_denominator(0) end)
+    expect(success).to.be_falsy()
+  end)
+
+  it('should not throw when assert_denominator is called with valid power of 2', function()
+    for _, d in ipairs({1, 2, 4, 8, 16, 32, 64, 128, 256}) do
+      validation.assert_denominator(d)
+    end
+  end)
+
+  it('should throw error when assert_ticks is called with zero', function()
+    local success = pcall(function() validation.assert_ticks(0) end)
+    expect(success).to.be_falsy()
+  end)
+
+  it('should not throw when assert_ticks is called with valid value', function()
+    validation.assert_ticks(1)
+    validation.assert_ticks(480)
+    validation.assert_ticks(0x7FFF)
+  end)
+
+  it('should reject ticks exceeding 15-bit max', function()
+    local success = pcall(function() validation.assert_ticks(0x8000) end)
+    expect(success).to.be_falsy()
+  end)
 end)
 
 run_unit_tests()

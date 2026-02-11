@@ -899,6 +899,7 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
     else
       error(string.format('SetTempoEvent expects 0 or 3 data bytes, got %d', #self.data), 2)
     end
+    validation.assert_tempo(self.tempo)
     self.data = nil  -- canonical fields are the sole source of truth
   end,
 
@@ -920,6 +921,7 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   -- @function SetTempoEvent:set_tempo
   -- @param microseconds_per_quarter number Tempo value
   set_tempo = function(self, microseconds_per_quarter)
+    validation.assert_tempo(microseconds_per_quarter)
     self.tempo = microseconds_per_quarter
   end,
 
@@ -933,6 +935,7 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   -- @function SetTempoEvent:set_bpm
   -- @param bpm number Beats per minute
   set_bpm = function(self, bpm)
+    assert(type(bpm) == 'number' and bpm > 0, 'BPM must be a positive number')
     self:set_tempo(math.floor(60000000 / bpm))
   end,
 
@@ -1002,11 +1005,17 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   -- @param frames number Frames (0-29)
   -- @param fractional_frames number Sub-frames (default 0)
   set_offset = function(self, hours, minutes, seconds, frames, fractional_frames)
+    validation.assert_7bit(hours, 'Hours')
+    validation.assert_7bit(minutes, 'Minutes')
+    validation.assert_7bit(seconds, 'Seconds')
+    validation.assert_7bit(frames, 'Frames')
+    fractional_frames = fractional_frames or 0
+    validation.assert_7bit(fractional_frames, 'Fractional frames')
     self.hours = hours
     self.minutes = minutes
     self.seconds = seconds
     self.frames = frames
-    self.fractional_frames = fractional_frames or 0
+    self.fractional_frames = fractional_frames
   end,
 }
 
@@ -1068,10 +1077,16 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   -- @param clocks_per_click number MIDI clocks per metronome click (default 24)
   -- @param thirty_seconds_per_quarter number 32nd notes per quarter note (default 8)
   set_time_signature = function(self, numerator, denominator, clocks_per_click, thirty_seconds_per_quarter)
+    validation.assert_7bit(numerator, 'Numerator')
+    validation.assert_denominator(denominator)
+    clocks_per_click = clocks_per_click or 24
+    thirty_seconds_per_quarter = thirty_seconds_per_quarter or 8
+    validation.assert_7bit(clocks_per_click, 'Clocks per metronome click')
+    validation.assert_7bit(thirty_seconds_per_quarter, 'Thirty-seconds per quarter')
     self.numerator = numerator
     self.denominator = denominator
-    self.clocks_per_metronome_click = clocks_per_click or 24
-    self.thirty_seconds_per_quarter = thirty_seconds_per_quarter or 8
+    self.clocks_per_metronome_click = clocks_per_click
+    self.thirty_seconds_per_quarter = thirty_seconds_per_quarter
   end,
 }
 
@@ -1125,6 +1140,8 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
   -- @param sharps_flats number Number of sharps (+) or flats (-), from -7 to +7
   -- @param is_minor boolean True for minor key, false for major
   set_key_signature = function(self, sharps_flats, is_minor)
+    validation.assert_sharps_flats(sharps_flats)
+    validation.assert_boolean(is_minor, 'is_minor')
     self.sharps_flats = sharps_flats
     self.is_minor = is_minor
   end,
