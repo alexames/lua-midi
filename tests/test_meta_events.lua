@@ -135,6 +135,20 @@ describe('TimeSignatureEventTests', function()
       expect(ts:_get_data()[2]).to.be_equal_to(power)
     end
   end)
+
+  it('should store denominator as integer when constructed from raw bytes', function()
+    -- In Lua 5.4, 2^n returns a float; 1<<n returns an integer.
+    -- The denominator must be integer for regularity with set_time_signature.
+    local ts = TimeSignatureEvent(0, {4, 2, 24, 8})  -- 4/4 time (denominator_power=2)
+    expect(math.type(ts.denominator)).to.be_equal_to('integer')
+  end)
+
+  it('should produce equal events from raw bytes and set_time_signature', function()
+    local from_bytes = TimeSignatureEvent(0, {4, 2, 24, 8})
+    local from_setter = TimeSignatureEvent(0, {})
+    from_setter:set_time_signature(4, 4, 24, 8)
+    expect(from_bytes == from_setter).to.be_truthy()
+  end)
 end)
 
 describe('KeySignatureEventTests', function()

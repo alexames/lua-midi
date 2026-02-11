@@ -1017,7 +1017,7 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
     self.MetaEvent.__init(self, time_delta, data)
     if #self.data == 4 then
       self.numerator = self.data[1]
-      self.denominator = 2 ^ self.data[2]
+      self.denominator = 1 << self.data[2]
       self.clocks_per_metronome_click = self.data[3]
       self.thirty_seconds_per_quarter = self.data[4]
     elseif #self.data == 0 then
