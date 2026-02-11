@@ -100,6 +100,33 @@ function validate_pitch_bend(value)
   return _validate_integer_range(value, 'Pitch bend', 0, 16383)
 end
 
+--- Validate a 14-bit data value (0-16383).
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_14bit(value, name)
+  return _validate_integer_range(value, name or 'Value', 0, 16383)
+end
+
+--- Validate a 4-bit data value (0-15).
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_4bit(value, name)
+  return _validate_integer_range(value, name or 'Value', 0, 15)
+end
+
+--- Validate a 3-bit data value (0-7).
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_3bit(value, name)
+  return _validate_integer_range(value, name or 'Value', 0, 7)
+end
+
 --- Validate a 7-bit data value (0-127).
 -- @param value number The value to validate
 -- @param name string Optional name for error messages (default "Value")
@@ -171,6 +198,33 @@ end
 -- @raise error if pitch bend value is invalid
 function assert_pitch_bend(value)
   local valid, err = validate_pitch_bend(value)
+  if not valid then error(err, 2) end
+end
+
+--- Assert that a 14-bit value is valid, throws error if not.
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @raise error if value is invalid
+function assert_14bit(value, name)
+  local valid, err = validate_14bit(value, name)
+  if not valid then error(err, 2) end
+end
+
+--- Assert that a 4-bit value is valid, throws error if not.
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @raise error if value is invalid
+function assert_4bit(value, name)
+  local valid, err = validate_4bit(value, name)
+  if not valid then error(err, 2) end
+end
+
+--- Assert that a 3-bit value is valid, throws error if not.
+-- @param value number The value to validate
+-- @param name string Optional name for error messages (default "Value")
+-- @raise error if value is invalid
+function assert_3bit(value, name)
+  local valid, err = validate_3bit(value, name)
   if not valid then error(err, 2) end
 end
 

@@ -216,4 +216,56 @@ describe('SystemRealTimeMessageTests', function()
   end)
 end)
 
+describe('SystemMessageValidationTests', function()
+  it('should reject MIDITimeCodeQuarterFrameEvent with message type out of range', function()
+    local ok = pcall(function() MIDITimeCodeQuarterFrameEvent(0, 8, 0) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject MIDITimeCodeQuarterFrameEvent with negative message type', function()
+    local ok = pcall(function() MIDITimeCodeQuarterFrameEvent(0, -1, 0) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject MIDITimeCodeQuarterFrameEvent with values out of range', function()
+    local ok = pcall(function() MIDITimeCodeQuarterFrameEvent(0, 0, 16) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept MIDITimeCodeQuarterFrameEvent at boundary values', function()
+    MIDITimeCodeQuarterFrameEvent(0, 0, 0)
+    MIDITimeCodeQuarterFrameEvent(0, 7, 15)
+  end)
+
+  it('should reject SongPositionPointerEvent with position out of range', function()
+    local ok = pcall(function() SongPositionPointerEvent(0, 16384) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject SongPositionPointerEvent with negative position', function()
+    local ok = pcall(function() SongPositionPointerEvent(0, -1) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept SongPositionPointerEvent at boundary values', function()
+    SongPositionPointerEvent(0, 0)
+    SongPositionPointerEvent(0, 16383)
+  end)
+
+  it('should reject SongSelectEvent with song number out of range', function()
+    local ok = pcall(function() SongSelectEvent(0, 128) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject SongSelectEvent with negative song number', function()
+    local ok = pcall(function() SongSelectEvent(0, -1) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept SongSelectEvent at boundary values', function()
+    SongSelectEvent(0, 0)
+    SongSelectEvent(0, 127)
+  end)
+end)
+
 run_unit_tests()

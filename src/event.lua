@@ -551,6 +551,8 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
 MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(TimedEvent) {
   __init = function(self, time_delta, message_type, values)
     TimedEvent.__init(self, time_delta)
+    validation.assert_3bit(message_type, 'Message type')
+    validation.assert_4bit(values, 'MTC values')
     self.message_type = message_type
     self.values = values
   end,
@@ -599,6 +601,7 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
 SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent) {
   __init = function(self, time_delta, position)
     TimedEvent.__init(self, time_delta)
+    validation.assert_14bit(position, 'Song position')
     self.position = position
   end,
 
@@ -644,6 +647,7 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
 SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
   __init = function(self, time_delta, song_number)
     TimedEvent.__init(self, time_delta)
+    validation.assert_7bit(song_number, 'Song number')
     self.song_number = song_number
   end,
 
