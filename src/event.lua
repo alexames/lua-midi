@@ -112,6 +112,33 @@ TimedEvent = class 'TimedEvent' {
   write = function(self, file)
     TimedEvent._write_event_time(file, self.time_delta)
   end,
+
+  --- Default equality: compare class, time_delta, and declared fields.
+  -- Subclasses with a `fields` list get equality for free.
+  -- @param other TimedEvent The event to compare with
+  -- @return boolean True if equal
+  __eq = function(self, other)
+    if self.class ~= other.class then return false end
+    if self.time_delta ~= other.time_delta then return false end
+    if self.fields then
+      for _, field in ipairs(self.fields) do
+        if self[field] ~= other[field] then return false end
+      end
+    end
+    return true
+  end,
+
+  --- Default clone: reconstruct from time_delta and declared fields.
+  -- @return TimedEvent A new event equal to this one
+  clone = function(self)
+    local args = { self.time_delta }
+    if self.fields then
+      for _, field in ipairs(self.fields) do
+        table.insert(args, self[field])
+      end
+    end
+    return self.class(table.unpack(args))
+  end,
 }
 
 --- Event: Base class for channel voice messages.
@@ -502,6 +529,8 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
 -- @field message_type number Message type (0-7)
 -- @field values number Values (0-15)
 MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(TimedEvent) {
+  fields = { 'message_type', 'values' },
+
   __init = function(self, time_delta, message_type, values)
     TimedEvent.__init(self, time_delta)
     validation.assert_3bit(message_type, 'Message type')
@@ -524,17 +553,6 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
     midi_io.writeUInt8be(file, data)
   end,
 
-  __eq = function(self, other)
-    return self.class == other.class
-       and self.time_delta == other.time_delta
-       and self.message_type == other.message_type
-       and self.values == other.values
-  end,
-
-  clone = function(self)
-    return MIDITimeCodeQuarterFrameEvent(self.time_delta, self.message_type, self.values)
-  end,
-
   __tostring = function(self)
     return string.format('MIDITimeCodeQuarterFrameEvent(%d, type=%d, values=%d)',
                          self.time_delta, self.message_type, self.values)
@@ -547,6 +565,8 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
 -- @field time_delta number Delta time in ticks
 -- @field position number Position in MIDI beats (14-bit value)
 SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent) {
+  fields = { 'position' },
+
   __init = function(self, time_delta, position)
     TimedEvent.__init(self, time_delta)
     validation.assert_14bit(position, 'Song position')
@@ -563,16 +583,6 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
     midi_io.writeUInt14le(file, self.position)
   end,
 
-  __eq = function(self, other)
-    return self.class == other.class
-       and self.time_delta == other.time_delta
-       and self.position == other.position
-  end,
-
-  clone = function(self)
-    return SongPositionPointerEvent(self.time_delta, self.position)
-  end,
-
   __tostring = function(self)
     return string.format('SongPositionPointerEvent(%d, position=%d)', self.time_delta, self.position)
   end,
@@ -584,6 +594,8 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
 -- @field time_delta number Delta time in ticks
 -- @field song_number number Song number (0-127)
 SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
+  fields = { 'song_number' },
+
   __init = function(self, time_delta, song_number)
     TimedEvent.__init(self, time_delta)
     validation.assert_7bit(song_number, 'Song number')
@@ -599,16 +611,6 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xF3)
     midi_io.writeUInt8be(file, self.song_number)
-  end,
-
-  __eq = function(self, other)
-    return self.class == other.class
-       and self.time_delta == other.time_delta
-       and self.song_number == other.song_number
-  end,
-
-  clone = function(self)
-    return SongSelectEvent(self.time_delta, self.song_number)
   end,
 
   __tostring = function(self)
@@ -635,14 +637,6 @@ local function _simple_system_event(name, status_byte)
     write = function(self, file)
       TimedEvent._write_event_time(file, self.time_delta)
       midi_io.writeUInt8be(file, status_byte)
-    end,
-
-    __eq = function(self, other)
-      return self.class == other.class and self.time_delta == other.time_delta
-    end,
-
-    clone = function(self)
-      return _M[name](self.time_delta)
     end,
 
     __tostring = function(self)
