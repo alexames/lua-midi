@@ -437,7 +437,7 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
   -- @param data table Array of data bytes (excluding 0xF0 and 0xF7)
   __init = function(self, time_delta, data)
     TimedEvent.__init(self, time_delta)
-    self.data = data or {}
+    self.data = data and {table.unpack(data)} or {}
   end,
 
   --- Read a SysEx event from file.
@@ -706,7 +706,7 @@ MetaEvent = class 'MetaEvent' : extends(Event) {
   __init = function(self, time_delta, channel, data)
     assert(channel == 0x0F)
     self.Event.__init(self, time_delta, channel)
-    self.data = data
+    self.data = {table.unpack(data)}
   end,
 
   --- Read a meta event from file.

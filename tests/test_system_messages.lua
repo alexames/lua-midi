@@ -207,6 +207,13 @@ describe('SystemRealTimeMessageTests', function()
     local reset = SystemResetEvent(1000)
     expect(tostring(reset)).to.be_equal_to('SystemResetEvent(1000)')
   end)
+
+  it('should defensively copy SysEx data table', function()
+    local data = {0x41, 0x10, 0x42}
+    local sysex = SystemExclusiveEvent(0, data)
+    data[1] = 0xFF
+    expect(sysex.data[1]).to.be_equal_to(0x41)
+  end)
 end)
 
 run_unit_tests()

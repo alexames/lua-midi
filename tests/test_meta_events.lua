@@ -325,6 +325,13 @@ describe('NewMetaEventTests', function()
     local dn = DeviceNameEvent(0, 0x0F, {0x53, 0x79, 0x6E, 0x74, 0x68})  -- "Synth"
     expect(#dn.data).to.be_equal_to(5)
   end)
+
+  it('should defensively copy meta event data table', function()
+    local data = {0x07, 0xA1, 0x20}
+    local tempo = SetTempoEvent(0, 0x0F, data)
+    data[1] = 0xFF
+    expect(tempo.data[1]).to.be_equal_to(0x07)
+  end)
 end)
 
 run_unit_tests()
