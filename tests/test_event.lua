@@ -13,6 +13,7 @@ local PitchWheelChangeEvent = event.PitchWheelChangeEvent
 local MetaEvent = event.MetaEvent
 local SetTempoEvent = event.SetTempoEvent
 local EndOfTrackEvent = event.EndOfTrackEvent
+local midi_io = require 'lua-midi.io'
 local MidiFile = require 'lua-midi.midi_file'.MidiFile
 local Track = require 'lua-midi.track'.Track
 
@@ -124,8 +125,8 @@ describe('VLQRoundTripTests', function()
         return result
       end,
     }
-    event.TimedEvent._write_event_time(file, value)
-    local read_back = event.TimedEvent._read_event_time(file)
+    midi_io.writeVLQ(file, value)
+    local read_back = midi_io.readVLQ(file)
     return read_back, table.concat(buffer)
   end
 

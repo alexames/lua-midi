@@ -177,4 +177,63 @@ describe('WriteRangeValidationTests', function()
   end)
 end)
 
+describe('VLQTests', function()
+  local function vlq_round_trip(value)
+    local buffer = {}
+    local pos = 0
+    local file = {
+      write = function(_, s) table.insert(buffer, s) end,
+      read = function(_, n)
+        local joined = table.concat(buffer)
+        local result = joined:sub(pos + 1, pos + n)
+        pos = pos + n
+        return result
+      end,
+    }
+    io_util.writeVLQ(file, value)
+    local read_back = io_util.readVLQ(file)
+    return read_back, table.concat(buffer)
+  end
+
+  it('should round-trip 1-byte VLQ values (0-127)', function()
+    local result, bytes = vlq_round_trip(0)
+    expect(result).to.be_equal_to(0)
+    expect(#bytes).to.be_equal_to(1)
+
+    result, bytes = vlq_round_trip(127)
+    expect(result).to.be_equal_to(127)
+    expect(#bytes).to.be_equal_to(1)
+  end)
+
+  it('should round-trip 2-byte VLQ values (128-16383)', function()
+    local result, bytes = vlq_round_trip(128)
+    expect(result).to.be_equal_to(128)
+    expect(#bytes).to.be_equal_to(2)
+
+    result, bytes = vlq_round_trip(16383)
+    expect(result).to.be_equal_to(16383)
+    expect(#bytes).to.be_equal_to(2)
+  end)
+
+  it('should round-trip 3-byte VLQ values (16384-2097151)', function()
+    local result, bytes = vlq_round_trip(16384)
+    expect(result).to.be_equal_to(16384)
+    expect(#bytes).to.be_equal_to(3)
+
+    result, bytes = vlq_round_trip(2097151)
+    expect(result).to.be_equal_to(2097151)
+    expect(#bytes).to.be_equal_to(3)
+  end)
+
+  it('should round-trip 4-byte VLQ values (2097152+)', function()
+    local result, bytes = vlq_round_trip(2097152)
+    expect(result).to.be_equal_to(2097152)
+    expect(#bytes).to.be_equal_to(4)
+
+    result, bytes = vlq_round_trip(0x0FFFFFFF)
+    expect(result).to.be_equal_to(0x0FFFFFFF)
+    expect(#bytes).to.be_equal_to(4)
+  end)
+end)
+
 run_unit_tests()

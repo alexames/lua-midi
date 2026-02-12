@@ -66,17 +66,11 @@ TimedEvent = class 'TimedEvent' {
   end,
 
   --- Read a variable-length time delta from file.
-  -- MIDI uses 7 bits per byte with MSB as continuation flag.
   -- @param file file Binary input file handle
   -- @return number Time delta value
   -- @local
   _read_event_time = function(file)
-    local time_delta = 0
-    repeat
-      local byte = midi_io.readUInt8be(file)
-      time_delta = (time_delta << 7) + (byte & 0x7F)
-    until byte & 0x80 == 0
-    return time_delta
+    return midi_io.readVLQ(file)
   end,
 
   --- Write a variable-length time delta to file.
@@ -84,20 +78,7 @@ TimedEvent = class 'TimedEvent' {
   -- @param time_delta number Time delta value to write
   -- @local
   _write_event_time = function(file, time_delta)
-    -- Emit continuation bytes as needed (MSB = 1).
-    -- Each continuation byte carries 7 bits of the value with MSB set.
-    -- Uses cascading if (not elseif) so all necessary bytes are written.
-    if time_delta > 0x1FFFFF then
-      midi_io.writeUInt8be(file, ((time_delta >> 21) & 0x7F) | 0x80)
-    end
-    if time_delta > 0x3FFF then
-      midi_io.writeUInt8be(file, ((time_delta >> 14) & 0x7F) | 0x80)
-    end
-    if time_delta > 0x7F then
-      midi_io.writeUInt8be(file, ((time_delta >> 7) & 0x7F) | 0x80)
-    end
-    -- Final byte (MSB = 0)
-    midi_io.writeUInt8be(file, time_delta & 0x7F)
+    midi_io.writeVLQ(file, time_delta)
   end,
 
   --- Read an event from file (placeholder for derived classes).

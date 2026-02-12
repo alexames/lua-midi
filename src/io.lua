@@ -113,6 +113,43 @@ function readUInt14le(file)
   return (msb << 7) | lsb
 end
 
+--- Read a MIDI variable-length quantity (VLQ) from a file.
+-- VLQ uses 7 bits per byte with MSB as continuation flag.
+-- Used for both event time deltas and meta event data lengths.
+-- @param file file An open file handle for reading
+-- @return number The decoded value (0 to 0x0FFFFFFF)
+-- @raise error on unexpected EOF
+function readVLQ(file)
+  local value = 0
+  repeat
+    local byte = readUInt8be(file)
+    value = (value << 7) + (byte & 0x7F)
+  until byte & 0x80 == 0
+  return value
+end
+
+--- Write a MIDI variable-length quantity (VLQ) to a file.
+-- VLQ uses 7 bits per byte with MSB as continuation flag.
+-- Used for both event time deltas and meta event data lengths.
+-- @param file file An open file handle for writing
+-- @param value number The value to encode (0 to 0x0FFFFFFF)
+function writeVLQ(file, value)
+  -- Emit continuation bytes as needed (MSB = 1).
+  -- Each continuation byte carries 7 bits of the value with MSB set.
+  -- Uses cascading if (not elseif) so all necessary bytes are written.
+  if value > 0x1FFFFF then
+    writeUInt8be(file, ((value >> 21) & 0x7F) | 0x80)
+  end
+  if value > 0x3FFF then
+    writeUInt8be(file, ((value >> 14) & 0x7F) | 0x80)
+  end
+  if value > 0x7F then
+    writeUInt8be(file, ((value >> 7) & 0x7F) | 0x80)
+  end
+  -- Final byte (MSB = 0)
+  writeUInt8be(file, value & 0x7F)
+end
+
 --- Create a counting writer that tallies bytes written without storing them.
 -- The returned object has a file-like `write` method and a `count` field.
 -- @return table A counting writer with write(self, s) and count fields
