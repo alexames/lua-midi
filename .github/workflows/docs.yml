@@ -40,7 +40,7 @@ jobs:
 
     - name: Set up Lua package path
       run: |
-        export LUA_PATH="$GITHUB_WORKSPACE/?.lua;$GITHUB_WORKSPACE/?/init.lua;;"
+        export LUA_PATH="$GITHUB_WORKSPACE/llx/src/?.lua;$GITHUB_WORKSPACE/llx/src/?/init.lua;$GITHUB_WORKSPACE/midi/src/?.lua;$GITHUB_WORKSPACE/midi/src/?/init.lua;;"
         echo "LUA_PATH=$LUA_PATH" >> $GITHUB_ENV
 
     - name: Generate documentation

@@ -9,12 +9,7 @@ Provides classes for MIDI files, tracks, events, instruments, and validation.
 ]]
 
 -- Source files
-file = {
-  '.',
-  exclude = {
-    'tests',
-  }
-}
+file = 'src'
 
 -- Output directory
 dir = 'docs'

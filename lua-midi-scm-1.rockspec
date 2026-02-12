@@ -30,7 +30,7 @@ dependencies = {
 
 test = {
    type = "command",
-   command = "lua -e \"require('lua-midi')\"",
+   command = "cd tests && for f in test_*.lua; do echo \"=== $f ===\"; lua \"$f\" || exit 1; done",
 }
 
 build = {
