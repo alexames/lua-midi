@@ -11,7 +11,7 @@
 --   * Event - Channel voice messages (note on/off, control change, etc.)
 --     * NoteBeginEvent - Note on (0x90)
 --     * NoteEndEvent - Note off (0x80)
---     * VelocityChangeEvent - Polyphonic aftertouch (0xA0)
+--     * PolyphonicKeyPressureEvent - Polyphonic aftertouch (0xA0)
 --     * ControllerChangeEvent - Control change (0xB0)
 --     * ProgramChangeEvent - Program change (0xC0)
 --     * ChannelPressureChangeEvent - Channel aftertouch (0xD0)
@@ -314,27 +314,27 @@ NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
 
 --- Polyphonic Key Pressure (Aftertouch) event (0xA0).
 -- Pressure applied to an individual note after it's been struck.
--- @type VelocityChangeEvent
+-- @type PolyphonicKeyPressureEvent
 -- @field time_delta number Delta time in ticks
 -- @field channel number MIDI channel (0-15)
 -- @field note_number number MIDI note number (0-127)
--- @field velocity number Pressure value (0-127)
-VelocityChangeEvent = class 'VelocityChangeEvent' : extends(Event) {
-  --- Create a new VelocityChangeEvent.
-  -- @function VelocityChangeEvent:__init
+-- @field pressure number Pressure value (0-127)
+PolyphonicKeyPressureEvent = class 'PolyphonicKeyPressureEvent' : extends(Event) {
+  --- Create a new PolyphonicKeyPressureEvent.
+  -- @function PolyphonicKeyPressureEvent:__init
   -- @param time_delta number Delta time in ticks
   -- @param channel number MIDI channel (0-15)
   -- @param note_number number MIDI note number (0-127)
-  -- @param velocity number Pressure value (0-127)
-  __init = function(self, time_delta, channel, note_number, velocity)
+  -- @param pressure number Pressure value (0-127)
+  __init = function(self, time_delta, channel, note_number, pressure)
     validation.assert_channel(channel)
     validation.assert_note(note_number)
-    validation.assert_velocity(velocity)
+    validation.assert_7bit(pressure, 'Pressure')
     self.Event.__init(self, time_delta, channel)
     self.note_number = note_number
-    self.velocity = velocity
+    self.pressure = pressure
   end,
-  schema = { 'note_number', 'velocity' },
+  schema = { 'note_number', 'pressure' },
   command = 0xA0,
 }
 
@@ -1120,7 +1120,7 @@ SequencerSpecificEvent = class 'SequencerSpecificEvent' : extends(MetaEvent) {
 local event_type_list = {
   NoteEndEvent,
   NoteBeginEvent,
-  VelocityChangeEvent,
+  PolyphonicKeyPressureEvent,
   ControllerChangeEvent,
   ProgramChangeEvent,
   ChannelPressureChangeEvent,
