@@ -33,7 +33,7 @@ instrument = llx.enum 'instrument' {
   'harpsichord',
   'clav',
 
-  -- Chrome Percussion
+  -- Chromatic Percussion
   'celesta',
   'glockenspiel',
   'music_box',
