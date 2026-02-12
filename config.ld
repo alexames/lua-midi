@@ -27,7 +27,7 @@ all = true
 template = nil
 
 -- Package display name
-package = 'midi'
+package = ''
 
 -- One file per module
 one = false
