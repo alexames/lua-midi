@@ -969,12 +969,12 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   -- @param frames number Frames (0-29)
   -- @param fractional_frames number Sub-frames (default 0)
   set_offset = function(self, hours, minutes, seconds, frames, fractional_frames)
-    validation.assert_7bit(hours, 'Hours')
-    validation.assert_7bit(minutes, 'Minutes')
-    validation.assert_7bit(seconds, 'Seconds')
-    validation.assert_7bit(frames, 'Frames')
+    validation.assert_smpte_hours(hours)
+    validation.assert_smpte_minutes(minutes)
+    validation.assert_smpte_seconds(seconds)
+    validation.assert_smpte_frames(frames)
     fractional_frames = fractional_frames or 0
-    validation.assert_7bit(fractional_frames, 'Fractional frames')
+    validation.assert_smpte_fractional_frames(fractional_frames)
     self.hours = hours
     self.minutes = minutes
     self.seconds = seconds

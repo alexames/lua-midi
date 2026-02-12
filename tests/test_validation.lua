@@ -375,4 +375,58 @@ describe('AssertValidationTests', function()
   end)
 end)
 
+describe('SMPTEValidationTests', function()
+  it('should accept valid SMPTE hours', function()
+    validation.assert_smpte_hours(0)
+    validation.assert_smpte_hours(23)
+  end)
+
+  it('should reject SMPTE hours out of range', function()
+    local ok = pcall(function() validation.assert_smpte_hours(24) end)
+    expect(ok).to.be_falsy()
+    ok = pcall(function() validation.assert_smpte_hours(-1) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept valid SMPTE minutes', function()
+    validation.assert_smpte_minutes(0)
+    validation.assert_smpte_minutes(59)
+  end)
+
+  it('should reject SMPTE minutes out of range', function()
+    local ok = pcall(function() validation.assert_smpte_minutes(60) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept valid SMPTE seconds', function()
+    validation.assert_smpte_seconds(0)
+    validation.assert_smpte_seconds(59)
+  end)
+
+  it('should reject SMPTE seconds out of range', function()
+    local ok = pcall(function() validation.assert_smpte_seconds(60) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept valid SMPTE frames', function()
+    validation.assert_smpte_frames(0)
+    validation.assert_smpte_frames(29)
+  end)
+
+  it('should reject SMPTE frames out of range', function()
+    local ok = pcall(function() validation.assert_smpte_frames(30) end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept valid SMPTE fractional frames', function()
+    validation.assert_smpte_fractional_frames(0)
+    validation.assert_smpte_fractional_frames(99)
+  end)
+
+  it('should reject SMPTE fractional frames out of range', function()
+    local ok = pcall(function() validation.assert_smpte_fractional_frames(100) end)
+    expect(ok).to.be_falsy()
+  end)
+end)
+
 run_unit_tests()

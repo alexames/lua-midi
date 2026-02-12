@@ -310,6 +310,88 @@ function assert_denominator(denominator)
   if not valid then error(err, 2) end
 end
 
+--- Validate a SMPTE hours value (0-23).
+-- @param hours number The hours value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_smpte_hours(hours)
+  return _validate_integer_range(hours, 'SMPTE hours', 0, 23)
+end
+
+--- Assert that a SMPTE hours value is valid, throws error if not.
+-- @param hours number The hours value to validate
+-- @raise error if hours is invalid
+function assert_smpte_hours(hours)
+  local valid, err = validate_smpte_hours(hours)
+  if not valid then error(err, 2) end
+end
+
+--- Validate a SMPTE minutes value (0-59).
+-- @param minutes number The minutes value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_smpte_minutes(minutes)
+  return _validate_integer_range(minutes, 'SMPTE minutes', 0, 59)
+end
+
+--- Assert that a SMPTE minutes value is valid, throws error if not.
+-- @param minutes number The minutes value to validate
+-- @raise error if minutes is invalid
+function assert_smpte_minutes(minutes)
+  local valid, err = validate_smpte_minutes(minutes)
+  if not valid then error(err, 2) end
+end
+
+--- Validate a SMPTE seconds value (0-59).
+-- @param seconds number The seconds value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_smpte_seconds(seconds)
+  return _validate_integer_range(seconds, 'SMPTE seconds', 0, 59)
+end
+
+--- Assert that a SMPTE seconds value is valid, throws error if not.
+-- @param seconds number The seconds value to validate
+-- @raise error if seconds is invalid
+function assert_smpte_seconds(seconds)
+  local valid, err = validate_smpte_seconds(seconds)
+  if not valid then error(err, 2) end
+end
+
+--- Validate a SMPTE frames value (0-29).
+-- Valid for all SMPTE frame rates (24, 25, 29.97, 30 fps).
+-- @param frames number The frames value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_smpte_frames(frames)
+  return _validate_integer_range(frames, 'SMPTE frames', 0, 29)
+end
+
+--- Assert that a SMPTE frames value is valid, throws error if not.
+-- @param frames number The frames value to validate
+-- @raise error if frames is invalid
+function assert_smpte_frames(frames)
+  local valid, err = validate_smpte_frames(frames)
+  if not valid then error(err, 2) end
+end
+
+--- Validate a SMPTE fractional frames value (0-99).
+-- Represents 1/100ths of a frame.
+-- @param fractional_frames number The fractional frames value to validate
+-- @return boolean True if valid, false otherwise
+-- @return string|nil Error message if invalid
+function validate_smpte_fractional_frames(fractional_frames)
+  return _validate_integer_range(fractional_frames, 'SMPTE fractional frames', 0, 99)
+end
+
+--- Assert that a SMPTE fractional frames value is valid, throws error if not.
+-- @param fractional_frames number The fractional frames value to validate
+-- @raise error if fractional frames is invalid
+function assert_smpte_fractional_frames(fractional_frames)
+  local valid, err = validate_smpte_fractional_frames(fractional_frames)
+  if not valid then error(err, 2) end
+end
+
 --- Validate a MIDI ticks-per-quarter-note value (1-32767).
 -- @param ticks number The ticks value to validate
 -- @return boolean True if valid, false otherwise
