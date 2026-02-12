@@ -67,7 +67,9 @@ describe('MidiFileTests', function()
     expect(type(bin) == 'string').to.be_truthy()
   end)
 
-  it('should return binary data longer than 6 bytes when tobytes is called', function()
+  it('should return binary data longer than 6 bytes'
+    .. ' when tobytes is called',
+  function()
     local mf = MidiFile(1, 96)
     local bin = mf:__tobytes()
     expect(#bin > 6).to.be_truthy()  -- Should at least include the MIDI header
@@ -133,7 +135,9 @@ describe('MidiFileEqualityTests', function()
     expect(a == b).to.be_truthy()
   end)
 
-  it('should consider SMPTE MidiFiles with different frame rates unequal', function()
+  it('should consider SMPTE MidiFiles with different'
+    .. ' frame rates unequal',
+  function()
     local a = MidiFile(1, 96)
     a:set_smpte_timing(25, 40)
     local b = MidiFile(1, 96)

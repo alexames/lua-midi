@@ -29,7 +29,9 @@ describe('SystemCommonMessageTests', function()
     expect(#sysex.data).to.be_equal_to(4)
   end)
 
-  it('should create SystemExclusiveEvent with correct first data byte', function()
+  it('should create SystemExclusiveEvent with correct'
+    .. ' first data byte',
+  function()
     local sysex = SystemExclusiveEvent(0, {0x41, 0x10, 0x42, 0x12})
     expect(sysex.data[1]).to.be_equal_to(0x41)
   end)
@@ -52,17 +54,23 @@ describe('SystemCommonMessageTests', function()
     expect(str:match('3 bytes')).to.be_truthy()
   end)
 
-  it('should create MIDITimeCodeQuarterFrameEvent with correct time delta', function()
+  it('should create MIDITimeCodeQuarterFrameEvent'
+    .. ' with correct time delta',
+  function()
     local mtc = MIDITimeCodeQuarterFrameEvent(0, 3, 15)
     expect(mtc.time_delta).to.be_equal_to(0)
   end)
 
-  it('should create MIDITimeCodeQuarterFrameEvent with correct message type', function()
+  it('should create MIDITimeCodeQuarterFrameEvent'
+    .. ' with correct message type',
+  function()
     local mtc = MIDITimeCodeQuarterFrameEvent(0, 3, 15)
     expect(mtc.message_type).to.be_equal_to(3)
   end)
 
-  it('should create MIDITimeCodeQuarterFrameEvent with correct values', function()
+  it('should create MIDITimeCodeQuarterFrameEvent'
+    .. ' with correct values',
+  function()
     local mtc = MIDITimeCodeQuarterFrameEvent(0, 3, 15)
     expect(mtc.values).to.be_equal_to(15)
   end)
@@ -73,19 +81,25 @@ describe('SystemCommonMessageTests', function()
     expect(str:match('MIDITimeCodeQuarterFrameEvent')).to.be_truthy()
   end)
 
-  it('should include message type in MIDITimeCodeQuarterFrameEvent tostring', function()
+  it('should include message type in'
+    .. ' MIDITimeCodeQuarterFrameEvent tostring',
+  function()
     local mtc = MIDITimeCodeQuarterFrameEvent(10, 2, 8)
     local str = tostring(mtc)
     expect(str:match('type=2')).to.be_truthy()
   end)
 
-  it('should include values in MIDITimeCodeQuarterFrameEvent tostring', function()
+  it('should include values in'
+    .. ' MIDITimeCodeQuarterFrameEvent tostring',
+  function()
     local mtc = MIDITimeCodeQuarterFrameEvent(10, 2, 8)
     local str = tostring(mtc)
     expect(str:match('values=8')).to.be_truthy()
   end)
 
-  it('should create SongPositionPointerEvent with correct time delta', function()
+  it('should create SongPositionPointerEvent'
+    .. ' with correct time delta',
+  function()
     local spp = SongPositionPointerEvent(0, 1024)
     expect(spp.time_delta).to.be_equal_to(0)
   end)
@@ -217,27 +231,37 @@ describe('SystemRealTimeMessageTests', function()
 end)
 
 describe('SystemMessageValidationTests', function()
-  it('should reject MIDITimeCodeQuarterFrameEvent with message type out of range', function()
+  it('should reject MIDITimeCodeQuarterFrameEvent'
+    .. ' with message type out of range',
+  function()
     local ok = pcall(function() MIDITimeCodeQuarterFrameEvent(0, 8, 0) end)
     expect(ok).to.be_falsy()
   end)
 
-  it('should reject MIDITimeCodeQuarterFrameEvent with negative message type', function()
+  it('should reject MIDITimeCodeQuarterFrameEvent'
+    .. ' with negative message type',
+  function()
     local ok = pcall(function() MIDITimeCodeQuarterFrameEvent(0, -1, 0) end)
     expect(ok).to.be_falsy()
   end)
 
-  it('should reject MIDITimeCodeQuarterFrameEvent with values out of range', function()
+  it('should reject MIDITimeCodeQuarterFrameEvent'
+    .. ' with values out of range',
+  function()
     local ok = pcall(function() MIDITimeCodeQuarterFrameEvent(0, 0, 16) end)
     expect(ok).to.be_falsy()
   end)
 
-  it('should accept MIDITimeCodeQuarterFrameEvent at boundary values', function()
+  it('should accept MIDITimeCodeQuarterFrameEvent'
+    .. ' at boundary values',
+  function()
     MIDITimeCodeQuarterFrameEvent(0, 0, 0)
     MIDITimeCodeQuarterFrameEvent(0, 7, 15)
   end)
 
-  it('should reject SongPositionPointerEvent with position out of range', function()
+  it('should reject SongPositionPointerEvent'
+    .. ' with position out of range',
+  function()
     local ok = pcall(function() SongPositionPointerEvent(0, 16384) end)
     expect(ok).to.be_falsy()
   end)

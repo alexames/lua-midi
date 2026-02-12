@@ -218,7 +218,9 @@ describe('ValidationTests', function()
     expect(valid).to.be_falsy()
   end)
 
-  it('should include custom name in error message for 7-bit validation', function()
+  it('should include custom name in error message'
+    .. ' for 7-bit validation',
+  function()
     local valid, err = validation.validate_7bit(200, 'CustomValue')
     expect(valid).to.be_falsy()
   end)
@@ -230,28 +232,36 @@ describe('ValidationTests', function()
 end)
 
 describe('AssertValidationTests', function()
-  it('should throw error when assert_channel is called with invalid channel', function()
+  it('should throw error when assert_channel is called'
+    .. ' with invalid channel',
+  function()
     local success = pcall(function()
       validation.assert_channel(20)
     end)
     expect(success).to.be_falsy()
   end)
 
-  it('should throw error when assert_note is called with invalid note', function()
+  it('should throw error when assert_note is called'
+    .. ' with invalid note',
+  function()
     local success = pcall(function()
       validation.assert_note(200)
     end)
     expect(success).to.be_falsy()
   end)
 
-  it('should throw error when assert_velocity is called with invalid velocity', function()
+  it('should throw error when assert_velocity is called'
+    .. ' with invalid velocity',
+  function()
     local success = pcall(function()
       validation.assert_velocity(150)
     end)
     expect(success).to.be_falsy()
   end)
 
-  it('should not throw when assert_channel is called with valid channel', function()
+  it('should not throw when assert_channel is called'
+    .. ' with valid channel',
+  function()
     -- Should not throw
     validation.assert_channel(5)
   end)
@@ -261,43 +271,57 @@ describe('AssertValidationTests', function()
     validation.assert_note(60)
   end)
 
-  it('should not throw when assert_velocity is called with valid velocity', function()
+  it('should not throw when assert_velocity is called'
+    .. ' with valid velocity',
+  function()
     -- Should not throw
     validation.assert_velocity(100)
   end)
 
-  it('should throw error when assert_controller is called with invalid controller', function()
+  it('should throw error when assert_controller is called'
+    .. ' with invalid controller',
+  function()
     local success = pcall(function()
       validation.assert_controller(200)
     end)
     expect(success).to.be_falsy()
   end)
 
-  it('should not throw when assert_controller is called with valid controller', function()
+  it('should not throw when assert_controller is called'
+    .. ' with valid controller',
+  function()
     -- Should not throw
     validation.assert_controller(7)
   end)
 
-  it('should throw error when assert_program is called with invalid program', function()
+  it('should throw error when assert_program is called'
+    .. ' with invalid program',
+  function()
     local success = pcall(function()
       validation.assert_program(200)
     end)
     expect(success).to.be_falsy()
   end)
 
-  it('should not throw when assert_program is called with valid program', function()
+  it('should not throw when assert_program is called'
+    .. ' with valid program',
+  function()
     -- Should not throw
     validation.assert_program(42)
   end)
 
-  it('should throw error when assert_pitch_bend is called with invalid pitch bend', function()
+  it('should throw error when assert_pitch_bend is called'
+    .. ' with invalid pitch bend',
+  function()
     local success = pcall(function()
       validation.assert_pitch_bend(20000)
     end)
     expect(success).to.be_falsy()
   end)
 
-  it('should not throw when assert_pitch_bend is called with valid pitch bend', function()
+  it('should not throw when assert_pitch_bend is called'
+    .. ' with valid pitch bend',
+  function()
     -- Should not throw
     validation.assert_pitch_bend(8192)
   end)
@@ -321,18 +345,24 @@ describe('AssertValidationTests', function()
     expect(success).to.be_falsy()
   end)
 
-  it('should throw error when assert_sharps_flats is called with out-of-range value', function()
+  it('should throw error when assert_sharps_flats is called'
+    .. ' with out-of-range value',
+  function()
     local success = pcall(function() validation.assert_sharps_flats(8) end)
     expect(success).to.be_falsy()
   end)
 
-  it('should not throw when assert_sharps_flats is called with valid value', function()
+  it('should not throw when assert_sharps_flats is called'
+    .. ' with valid value',
+  function()
     validation.assert_sharps_flats(-7)
     validation.assert_sharps_flats(0)
     validation.assert_sharps_flats(7)
   end)
 
-  it('should throw error when assert_boolean is called with non-boolean', function()
+  it('should throw error when assert_boolean is called'
+    .. ' with non-boolean',
+  function()
     local success = pcall(function() validation.assert_boolean(1, 'test') end)
     expect(success).to.be_falsy()
   end)
@@ -342,17 +372,23 @@ describe('AssertValidationTests', function()
     validation.assert_boolean(false, 'test')
   end)
 
-  it('should throw error when assert_denominator is called with non-power-of-2', function()
+  it('should throw error when assert_denominator is called'
+    .. ' with non-power-of-2',
+  function()
     local success = pcall(function() validation.assert_denominator(3) end)
     expect(success).to.be_falsy()
   end)
 
-  it('should throw error when assert_denominator is called with zero', function()
+  it('should throw error when assert_denominator is called'
+    .. ' with zero',
+  function()
     local success = pcall(function() validation.assert_denominator(0) end)
     expect(success).to.be_falsy()
   end)
 
-  it('should not throw when assert_denominator is called with valid power of 2', function()
+  it('should not throw when assert_denominator is called'
+    .. ' with valid power of 2',
+  function()
     for _, d in ipairs({1, 2, 4, 8, 16, 32, 64, 128, 256}) do
       validation.assert_denominator(d)
     end
@@ -424,7 +460,9 @@ describe('SMPTEValidationTests', function()
   end)
 
   it('should reject SMPTE fractional frames out of range', function()
-    local ok = pcall(function() validation.assert_smpte_fractional_frames(100) end)
+    local ok = pcall(function()
+      validation.assert_smpte_fractional_frames(100)
+    end)
     expect(ok).to.be_falsy()
   end)
 end)

@@ -15,7 +15,9 @@ describe('SMPTETimingTests', function()
     expect(mf:is_smpte()).to.be_falsy()
   end)
 
-  it('should return true for is_smpte when SMPTE timing is set to 24fps', function()
+  it('should return true for is_smpte'
+    .. ' when SMPTE timing is set to 24fps',
+  function()
     local mf = MidiFile()
     mf:set_smpte_timing(24, 40)
     expect(mf:is_smpte()).to.be_truthy()
@@ -28,7 +30,9 @@ describe('SMPTETimingTests', function()
     expect(fps).to.be_equal_to(24)
   end)
 
-  it('should return correct ticks per frame when SMPTE timing is set to 24fps', function()
+  it('should return correct ticks per frame'
+    .. ' when SMPTE timing is set to 24fps',
+  function()
     local mf = MidiFile()
     mf:set_smpte_timing(24, 40)
     local fps, tpf = mf:get_smpte_timing()
@@ -42,21 +46,27 @@ describe('SMPTETimingTests', function()
     expect(fps).to.be_equal_to(25)
   end)
 
-  it('should return correct ticks per frame when SMPTE timing is set to 25fps', function()
+  it('should return correct ticks per frame'
+    .. ' when SMPTE timing is set to 25fps',
+  function()
     local mf = MidiFile()
     mf:set_smpte_timing(25, 40)
     local fps, tpf = mf:get_smpte_timing()
     expect(tpf).to.be_equal_to(40)
   end)
 
-  it('should return correct fps when SMPTE timing is set to 29.97fps drop-frame', function()
+  it('should return correct fps when SMPTE timing'
+    .. ' is set to 29.97fps drop-frame',
+  function()
     local mf = MidiFile()
     mf:set_smpte_timing(29.97, 40)
     local fps, tpf = mf:get_smpte_timing()
     expect(math.abs(fps - 29.97) < 0.01).to.be_truthy()
   end)
 
-  it('should return correct ticks per frame when SMPTE timing is set to 29.97fps', function()
+  it('should return correct ticks per frame'
+    .. ' when SMPTE timing is set to 29.97fps',
+  function()
     local mf = MidiFile()
     mf:set_smpte_timing(29.97, 40)
     local fps, tpf = mf:get_smpte_timing()
@@ -70,7 +80,9 @@ describe('SMPTETimingTests', function()
     expect(fps).to.be_equal_to(30)
   end)
 
-  it('should return correct ticks per frame when SMPTE timing is set to 30fps', function()
+  it('should return correct ticks per frame'
+    .. ' when SMPTE timing is set to 30fps',
+  function()
     local mf = MidiFile()
     mf:set_smpte_timing(30, 40)
     local fps, tpf = mf:get_smpte_timing()
@@ -85,7 +97,9 @@ describe('SMPTETimingTests', function()
     expect(success).to.be_falsy()
   end)
 
-  it('should store SMPTE ticks as SmpteDivision when SMPTE timing is set', function()
+  it('should store SMPTE ticks as SmpteDivision'
+    .. ' when SMPTE timing is set',
+  function()
     local mf = MidiFile()
     mf:set_smpte_timing(25, 40)
     expect(mf:is_smpte()).to.be_truthy()
@@ -124,13 +138,16 @@ describe('SMPTETimingTests', function()
     expect(mf.ticks).to.be_equal_to(96)
   end)
 
-  it('should return nil fps when get_smpte_timing is called on non-SMPTE file', function()
+  it('should return nil fps when get_smpte_timing'
+    .. ' is called on non-SMPTE file',
+  function()
     local mf = MidiFile{ticks = 96}
     local fps, tpf = mf:get_smpte_timing()
     expect(fps).to.be_nil()
   end)
 
-  it('should return nil ticks per frame when get_smpte_timing is called on non-SMPTE file', function()
+  it('should return nil ticks per frame when get_smpte_timing '
+    .. 'is called on non-SMPTE file', function()
     local mf = MidiFile{ticks = 96}
     local fps, tpf = mf:get_smpte_timing()
     expect(tpf).to.be_nil()
@@ -159,13 +176,15 @@ describe('SmpteDivisionTests', function()
     expect(a == b).to.be_truthy()
   end)
 
-  it('should consider SmpteDivisions with different frame rates unequal', function()
+  it('should consider SmpteDivisions with different frame '
+    .. 'rates unequal', function()
     local a = SmpteDivision(24, 40)
     local b = SmpteDivision(25, 40)
     expect(a == b).to.be_falsy()
   end)
 
-  it('should consider SmpteDivisions with different ticks per frame unequal', function()
+  it('should consider SmpteDivisions with different ticks '
+    .. 'per frame unequal', function()
     local a = SmpteDivision(24, 40)
     local b = SmpteDivision(24, 80)
     expect(a == b).to.be_falsy()
@@ -192,7 +211,8 @@ describe('SmpteDivisionTests', function()
   end)
 end)
 
--- Helper: write a MidiFile to bytes, read it back, and return the parsed result.
+-- Helper: write a MidiFile to bytes, read it back, and return
+-- the parsed result.
 local function write_and_read_back(mf)
   local bytes = mf:__tobytes()
   local tmp = io.tmpfile()

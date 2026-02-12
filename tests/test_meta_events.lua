@@ -79,14 +79,18 @@ describe('TimeSignatureEventTests', function()
     expect(sig.denominator).to.be_equal_to(4)
   end)
 
-  it('should set and get 4/4 time signature clocks per metronome click', function()
+  it('should set and get 4/4 time signature'
+    .. ' clocks per metronome click',
+  function()
     local ts = TimeSignatureEvent(0, {})
     ts:set_time_signature(4, 4, 24, 8)
     local sig = ts:get_time_signature()
     expect(sig.clocks_per_metronome_click).to.be_equal_to(24)
   end)
 
-  it('should set and get 4/4 time signature thirty seconds per quarter', function()
+  it('should set and get 4/4 time signature'
+    .. ' thirty seconds per quarter',
+  function()
     local ts = TimeSignatureEvent(0, {})
     ts:set_time_signature(4, 4, 24, 8)
     local sig = ts:get_time_signature()
@@ -136,14 +140,20 @@ describe('TimeSignatureEventTests', function()
     end
   end)
 
-  it('should store denominator as integer when constructed from raw bytes', function()
-    -- In Lua 5.4, 2^n returns a float; 1<<n returns an integer.
-    -- The denominator must be integer for regularity with set_time_signature.
-    local ts = TimeSignatureEvent(0, {4, 2, 24, 8})  -- 4/4 time (denominator_power=2)
+  it('should store denominator as integer'
+    .. ' when constructed from raw bytes',
+  function()
+    -- In Lua 5.4, 2^n returns a float; 1<<n returns
+    -- an integer. The denominator must be integer for
+    -- regularity with set_time_signature.
+    local ts = TimeSignatureEvent(0, {4, 2, 24, 8})
+    -- 4/4 time (denominator_power=2)
     expect(math.type(ts.denominator)).to.be_equal_to('integer')
   end)
 
-  it('should produce equal events from raw bytes and set_time_signature', function()
+  it('should produce equal events from raw bytes'
+    .. ' and set_time_signature',
+  function()
     local from_bytes = TimeSignatureEvent(0, {4, 2, 24, 8})
     local from_setter = TimeSignatureEvent(0, {})
     from_setter:set_time_signature(4, 4, 24, 8)
@@ -268,7 +278,9 @@ describe('SMPTEOffsetEventTests', function()
 end)
 
 describe('CanonicalFieldTests', function()
-  it('should expose tempo as a named field after construction from raw bytes', function()
+  it('should expose tempo as a named field'
+    .. ' after construction from raw bytes',
+  function()
     local tempo = SetTempoEvent(0, {0x07, 0xA1, 0x20})
     expect(tempo.tempo).to.be_equal_to(500000)
   end)
@@ -353,7 +365,8 @@ describe('NewMetaEventTests', function()
     local data = {0x07, 0xA1, 0x20}
     local tempo = SetTempoEvent(0, data)
     data[1] = 0xFF
-    expect(tempo.tempo).to.be_equal_to(500000)  -- original value, unaffected by mutation
+    -- original value, unaffected by mutation
+    expect(tempo.tempo).to.be_equal_to(500000)
   end)
 
   it('should not retain stale data on SetTempoEvent', function()
@@ -376,7 +389,9 @@ describe('NewMetaEventTests', function()
     expect(smpte.data).to.be_equal_to(nil)
   end)
 
-  it('should serialize tempo from canonical field after direct mutation', function()
+  it('should serialize tempo from canonical field'
+    .. ' after direct mutation',
+  function()
     local tempo = SetTempoEvent(0, {0x07, 0xA1, 0x20})  -- 500000 us
     tempo.tempo = 1000000  -- Change canonical field directly
     local data = tempo:_get_data()
@@ -386,7 +401,9 @@ describe('NewMetaEventTests', function()
     expect(data[3]).to.be_equal_to(0x40)
   end)
 
-  it('should serialize time signature from canonical fields after set', function()
+  it('should serialize time signature from canonical fields'
+    .. ' after set',
+  function()
     local ts = TimeSignatureEvent(0, {4, 2, 24, 8})  -- 4/4
     ts:set_time_signature(3, 4)  -- Change to 3/4
     local data = ts:_get_data()
@@ -396,7 +413,9 @@ describe('NewMetaEventTests', function()
     expect(data[4]).to.be_equal_to(8)   -- default 32nds
   end)
 
-  it('should serialize key signature from canonical fields after set', function()
+  it('should serialize key signature from canonical fields'
+    .. ' after set',
+  function()
     local ks = KeySignatureEvent(0, {0, 0})  -- C major
     ks:set_key_signature(-3, true)  -- Eb minor
     local data = ks:_get_data()
@@ -488,7 +507,9 @@ describe('SetterValidationTests', function()
     expect(ok).to.be_falsy()
   end)
 
-  it('should reject set_time_signature with non-power-of-2 denominator', function()
+  it('should reject set_time_signature'
+    .. ' with non-power-of-2 denominator',
+  function()
     local ts = TimeSignatureEvent(0, {})
     local ok = pcall(function() ts:set_time_signature(4, 3) end)
     expect(ok).to.be_falsy()
@@ -500,7 +521,9 @@ describe('SetterValidationTests', function()
     expect(ok).to.be_falsy()
   end)
 
-  it('should accept set_time_signature with valid power-of-2 denominators', function()
+  it('should accept set_time_signature'
+    .. ' with valid power-of-2 denominators',
+  function()
     local ts = TimeSignatureEvent(0, {})
     for _, d in ipairs({1, 2, 4, 8, 16, 32, 64, 128, 256}) do
       ts:set_time_signature(4, d)
@@ -508,7 +531,9 @@ describe('SetterValidationTests', function()
     end
   end)
 
-  it('should reject set_key_signature with sharps_flats out of range', function()
+  it('should reject set_key_signature'
+    .. ' with sharps_flats out of range',
+  function()
     local ks = KeySignatureEvent(0, {})
     local ok = pcall(function() ks:set_key_signature(8, false) end)
     expect(ok).to.be_falsy()

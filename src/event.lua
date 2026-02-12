@@ -123,8 +123,10 @@ TimedEvent = class 'TimedEvent' {
 }
 
 --- Event: Base class for channel voice messages.
--- Channel voice messages include note on/off, control changes, program changes, etc.
--- Each event has a channel (0-15) and a command byte that identifies the event type.
+-- Channel voice messages include note on/off, control
+-- changes, program changes, etc.
+-- Each event has a channel (0-15) and a command byte that
+-- identifies the event type.
 -- @type Event
 -- @field time_delta number Delta time in ticks since the previous event
 -- @field channel number MIDI channel (0-15)
@@ -178,7 +180,8 @@ Event = class 'Event' {
     assert(EventType, string.format('Unknown event command: 0x%02X', command))
 
     if EventType.schema then
-      -- Read arguments from file according to schema (e.g. note_number, velocity)
+      -- Read arguments from file according to schema
+      -- (e.g. note_number, velocity)
       local args = {}
       for _ = 1, #EventType.schema do
         table.insert(args, event_byte or midi_io.readUInt8be(file))
@@ -206,15 +209,19 @@ Event = class 'Event' {
 
     if self.schema then
       for _, field in ipairs(self.schema) do
-        local byte = assert(self[field], string.format('No field %s on Event', field))
+        local byte = assert(
+          self[field],
+          string.format('No field %s on Event', field))
         midi_io.writeUInt8be(file, byte)
       end
     end
   end,
 
   --- Equality comparison for channel voice events.
-  -- Two events are equal if they have the same class, time delta, channel, and field values.
-  -- Uses `schema` (byte-per-field events) or `fields` (custom-encoded events) to
+  -- Two events are equal if they have the same class,
+  -- time delta, channel, and field values.
+  -- Uses `schema` (byte-per-field events) or `fields`
+  -- (custom-encoded events) to
   -- determine which fields to compare.
   -- @param other Event The event to compare with
   -- @return boolean True if equal
@@ -252,11 +259,16 @@ Event = class 'Event' {
     local fields = self.schema or self.fields
     if fields then
       for _, field in ipairs(fields) do
-        local value = assert(self[field], string.format('No field %s on Event', field))
+        local value = assert(
+          self[field],
+          string.format('No field %s on Event', field))
         table.insert(argument_strings, value)
       end
     end
-    return string.format('%s(%s)', self.class.__name, table.concat(argument_strings, ', '))
+    return string.format(
+      '%s(%s)',
+      self.class.__name,
+      table.concat(argument_strings, ', '))
   end,
 }
 
@@ -319,7 +331,8 @@ NoteBeginEvent = class 'NoteBeginEvent' : extends(Event) {
 -- @field channel number MIDI channel (0-15)
 -- @field note_number number MIDI note number (0-127)
 -- @field pressure number Pressure value (0-127)
-PolyphonicKeyPressureEvent = class 'PolyphonicKeyPressureEvent' : extends(Event) {
+PolyphonicKeyPressureEvent =
+  class 'PolyphonicKeyPressureEvent' : extends(Event) {
   --- Create a new PolyphonicKeyPressureEvent.
   -- @function PolyphonicKeyPressureEvent:__init
   -- @param time_delta number Delta time in ticks
@@ -392,7 +405,8 @@ ProgramChangeEvent = class 'ProgramChangeEvent' : extends(Event) {
 -- @field time_delta number Delta time in ticks
 -- @field channel number MIDI channel (0-15)
 -- @field pressure number Pressure value (0-127)
-ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event) {
+ChannelPressureChangeEvent =
+  class 'ChannelPressureChangeEvent' : extends(Event) {
   --- Create a new ChannelPressureChangeEvent.
   -- @function ChannelPressureChangeEvent:__init
   -- @param time_delta number Delta time in ticks
@@ -410,7 +424,8 @@ ChannelPressureChangeEvent = class 'ChannelPressureChangeEvent' : extends(Event)
 
 --- Pitch Bend event (0xE0).
 -- Changes the pitch of all notes on a channel.
--- The value is a 14-bit unsigned integer (0-16383) where 8192 is center (no bend).
+-- The value is a 14-bit unsigned integer (0-16383) where
+-- 8192 is center (no bend).
 -- @type PitchWheelChangeEvent
 -- @field time_delta number Delta time in ticks
 -- @field channel number MIDI channel (0-15)
@@ -499,7 +514,9 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
   end,
 
   __tostring = function(self)
-    return string.format('SystemExclusiveEvent(%d, %d bytes)', self.time_delta, #self.data)
+    return string.format(
+      'SystemExclusiveEvent(%d, %d bytes)',
+      self.time_delta, #self.data)
   end,
 }
 
@@ -509,7 +526,9 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
 -- @field time_delta number Delta time in ticks
 -- @field message_type number Message type (0-7)
 -- @field values number Values (0-15)
-MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(TimedEvent) {
+MIDITimeCodeQuarterFrameEvent =
+  class 'MIDITimeCodeQuarterFrameEvent'
+    : extends(TimedEvent) {
   fields = { 'message_type', 'values' },
 
   __init = function(self, time_delta, message_type, values)
@@ -535,8 +554,12 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
   end,
 
   __tostring = function(self)
-    return string.format('MIDITimeCodeQuarterFrameEvent(%d, type=%d, values=%d)',
-                         self.time_delta, self.message_type, self.values)
+    return string.format(
+      'MIDITimeCodeQuarterFrameEvent'
+        .. '(%d, type=%d, values=%d)',
+      self.time_delta,
+      self.message_type,
+      self.values)
   end,
 }
 
@@ -545,7 +568,8 @@ MIDITimeCodeQuarterFrameEvent = class 'MIDITimeCodeQuarterFrameEvent' : extends(
 -- @type SongPositionPointerEvent
 -- @field time_delta number Delta time in ticks
 -- @field position number Position in MIDI beats (14-bit value)
-SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent) {
+SongPositionPointerEvent =
+  class 'SongPositionPointerEvent' : extends(TimedEvent) {
   fields = { 'position' },
 
   __init = function(self, time_delta, position)
@@ -565,7 +589,9 @@ SongPositionPointerEvent = class 'SongPositionPointerEvent' : extends(TimedEvent
   end,
 
   __tostring = function(self)
-    return string.format('SongPositionPointerEvent(%d, position=%d)', self.time_delta, self.position)
+    return string.format(
+      'SongPositionPointerEvent(%d, position=%d)',
+      self.time_delta, self.position)
   end,
 }
 
@@ -595,7 +621,9 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
   end,
 
   __tostring = function(self)
-    return string.format('SongSelectEvent(%d, song=%d)', self.time_delta, self.song_number)
+    return string.format(
+      'SongSelectEvent(%d, song=%d)',
+      self.time_delta, self.song_number)
   end,
 }
 
@@ -687,7 +715,8 @@ MetaEvent = class 'MetaEvent' : extends(TimedEvent) {
   end,
 
   --- Get the data bytes for this meta event.
-  -- Subclasses with canonical fields override this to compute data from those fields.
+  -- Subclasses with canonical fields override this to
+  -- compute data from those fields.
   -- @return table Array of data bytes
   -- @local
   _get_data = function(self)
@@ -707,14 +736,16 @@ MetaEvent = class 'MetaEvent' : extends(TimedEvent) {
       table.insert(data, midi_io.readUInt8be(file))
     end
     local meta_event = MetaEvent.types[meta_command]
-    assert(meta_event, string.format('Meta event %02X not recognized', meta_command))
+    assert(meta_event, string.format(
+      'Meta event %02X not recognized', meta_command))
     return meta_event(time_delta, data)
   end,
 
   --- Write the meta event to file.
   -- @function MetaEvent:write
   -- @param file file Binary output file handle
-  -- @param context table Write context (unused, accepted for interface consistency)
+  -- @param context table Write context (unused, accepted
+  --   for interface consistency)
   write = function(self, file, context)
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xFF)
@@ -750,7 +781,10 @@ MetaEvent = class 'MetaEvent' : extends(TimedEvent) {
     for i = 1, #data do
       table.insert(argument_strings, data[i])
     end
-    return string.format('%s(%s)', self.class.__name, table.concat(argument_strings, ', '))
+    return string.format(
+      '%s(%s)',
+      self.class.__name,
+      table.concat(argument_strings, ', '))
   end,
 
   command = 0xFF,
@@ -787,7 +821,8 @@ SequenceNameEvent = class 'SequenceNameEvent' : extends(MetaEvent) {
 --- Instrument Name meta event (0x04).
 -- Name of the instrument used in the track.
 -- @type TrackInstrumentNameEvent
-TrackInstrumentNameEvent = class 'TrackInstrumentNameEvent' : extends(MetaEvent) {
+TrackInstrumentNameEvent =
+  class 'TrackInstrumentNameEvent' : extends(MetaEvent) {
   meta_command = 0x04,
 }
 
@@ -865,7 +900,9 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
     elseif #self.data == 0 then
       self.tempo = 500000  -- default 120 BPM
     else
-      error(string.format('SetTempoEvent expects 0 or 3 data bytes, got %d', #self.data), 2)
+      error(string.format(
+        'SetTempoEvent expects 0 or 3 data bytes, got %d',
+        #self.data), 2)
     end
     validation.assert_tempo(self.tempo)
     self.data = nil  -- canonical fields are the sole source of truth
@@ -940,13 +977,18 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
       self.frames = 0
       self.fractional_frames = 0
     else
-      error(string.format('SMPTEOffsetEvent expects 0 or 5 data bytes, got %d', #self.data), 2)
+      error(string.format(
+        'SMPTEOffsetEvent expects 0 or 5 data bytes, got %d',
+        #self.data), 2)
     end
     self.data = nil  -- canonical fields are the sole source of truth
   end,
 
   _get_data = function(self)
-    return { self.hours, self.minutes, self.seconds, self.frames, self.fractional_frames }
+    return {
+      self.hours, self.minutes, self.seconds,
+      self.frames, self.fractional_frames,
+    }
   end,
 
   --- Get SMPTE offset components.
@@ -968,7 +1010,9 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   -- @param seconds number Seconds (0-59)
   -- @param frames number Frames (0-29)
   -- @param fractional_frames number Sub-frames (default 0)
-  set_offset = function(self, hours, minutes, seconds, frames, fractional_frames)
+  set_offset = function(
+      self, hours, minutes, seconds,
+      frames, fractional_frames)
     validation.assert_smpte_hours(hours)
     validation.assert_smpte_minutes(minutes)
     validation.assert_smpte_seconds(seconds)
@@ -1007,13 +1051,16 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
       self.clocks_per_metronome_click = 24
       self.thirty_seconds_per_quarter = 8
     else
-      error(string.format('TimeSignatureEvent expects 0 or 4 data bytes, got %d', #self.data), 2)
+      error(string.format(
+        'TimeSignatureEvent expects 0 or 4 data bytes, got %d',
+        #self.data), 2)
     end
     self.data = nil  -- canonical fields are the sole source of truth
   end,
 
   --- Get time signature components.
-  -- @return table Table with numerator, denominator, clocks_per_metronome_click, thirty_seconds_per_quarter
+  -- @return table Table with numerator, denominator,
+  --   clocks_per_metronome_click, thirty_seconds_per_quarter
   get_time_signature = function(self)
     return {
       numerator = self.numerator,
@@ -1036,16 +1083,22 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   --- Set time signature.
   -- @function TimeSignatureEvent:set_time_signature
   -- @param numerator number Beats per measure (e.g., 4 for 4/4)
-  -- @param denominator number Note value per beat (must be power of 2, e.g., 4 for quarter note)
+  -- @param denominator number Note value per beat
+  --   (must be power of 2, e.g., 4 for quarter note)
   -- @param clocks_per_click number MIDI clocks per metronome click (default 24)
-  -- @param thirty_seconds_per_quarter number 32nd notes per quarter note (default 8)
-  set_time_signature = function(self, numerator, denominator, clocks_per_click, thirty_seconds_per_quarter)
+  -- @param thirty_seconds_per_quarter number 32nd notes
+  --   per quarter note (default 8)
+  set_time_signature = function(
+      self, numerator, denominator,
+      clocks_per_click, thirty_seconds_per_quarter)
     validation.assert_7bit(numerator, 'Numerator')
     validation.assert_denominator(denominator)
     clocks_per_click = clocks_per_click or 24
     thirty_seconds_per_quarter = thirty_seconds_per_quarter or 8
     validation.assert_7bit(clocks_per_click, 'Clocks per metronome click')
-    validation.assert_7bit(thirty_seconds_per_quarter, 'Thirty-seconds per quarter')
+    validation.assert_7bit(
+      thirty_seconds_per_quarter,
+      'Thirty-seconds per quarter')
     self.numerator = numerator
     self.denominator = denominator
     self.clocks_per_metronome_click = clocks_per_click
@@ -1076,7 +1129,9 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
       self.sharps_flats = 0
       self.is_minor = false
     else
-      error(string.format('KeySignatureEvent expects 0 or 2 data bytes, got %d', #self.data), 2)
+      error(string.format(
+        'KeySignatureEvent expects 0 or 2 data bytes, got %d',
+        #self.data), 2)
     end
     self.data = nil  -- canonical fields are the sole source of truth
   end,
@@ -1162,8 +1217,10 @@ for _, v in ipairs(meta_event_type_list) do
 end
 
 -- Register System Common and System Real-Time messages
--- NOTE: 0xFF is intentionally NOT registered here. In MIDI files, 0xFF indicates
--- a meta event, not a system reset. System reset (0xFF) only exists in real-time
+-- NOTE: 0xFF is intentionally NOT registered here.
+-- In MIDI files, 0xFF indicates
+-- a meta event, not a system reset. System reset (0xFF)
+-- only exists in real-time
 -- MIDI streams. Meta events are handled via Event.types[0xF0] -> MetaEvent.
 local system_event_types = {}
 Event.system_types = system_event_types
@@ -1177,7 +1234,8 @@ system_event_types[0xFA] = StartEvent
 system_event_types[0xFB] = ContinueEvent
 system_event_types[0xFC] = StopEvent
 system_event_types[0xFE] = ActiveSensingEvent
--- system_event_types[0xFF] is NOT set - 0xFF in MIDI files is a meta event prefix
+-- system_event_types[0xFF] is NOT set
+-- 0xFF in MIDI files is a meta event prefix
 
 return _M
 

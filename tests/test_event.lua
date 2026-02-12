@@ -41,7 +41,9 @@ describe('EventTests', function()
     local e = SetTempoEvent(0, {0x07, 0xA1, 0x20})
     e:write(file, { previous_command_byte = 0 })
     local output = table.concat(buffer)
-    -- Expected: delta(0x00), command(0xFF), meta_command(0x51), length(3), data(0x07, 0xA1, 0x20)
+    -- Expected: delta(0x00), command(0xFF),
+    -- meta_command(0x51), length(3),
+    -- data(0x07, 0xA1, 0x20)
     expect(output:byte(1)).to.be_equal_to(0x00)   -- delta time
     expect(output:byte(2)).to.be_equal_to(0xFF)    -- command byte
     expect(output:byte(3)).to.be_equal_to(0x51)    -- meta command (set tempo)
@@ -77,7 +79,9 @@ describe('ChannelVoiceEventTests', function()
     expect(e.new_program_number).to.be_equal_to(42)
   end)
 
-  it('should write correct bytes for ProgramChangeEvent (1-field schema)', function()
+  it('should write correct bytes for ProgramChangeEvent'
+    .. ' (1-field schema)',
+  function()
     local buffer = {}
     local file = { write = function(_, s) table.insert(buffer, s) end }
     local e = ProgramChangeEvent(0, 5, 42)
@@ -90,14 +94,18 @@ describe('ChannelVoiceEventTests', function()
     expect(#output).to.be_equal_to(3)
   end)
 
-  it('should construct ChannelPressureChangeEvent with correct fields', function()
+  it('should construct ChannelPressureChangeEvent'
+    .. ' with correct fields',
+  function()
     local e = ChannelPressureChangeEvent(10, 0, 80)
     expect(e.time_delta).to.be_equal_to(10)
     expect(e.channel).to.be_equal_to(0)
     expect(e.pressure).to.be_equal_to(80)
   end)
 
-  it('should write correct bytes for ChannelPressureChangeEvent (1-field schema)', function()
+  it('should write correct bytes for'
+    .. ' ChannelPressureChangeEvent (1-field schema)',
+  function()
     local buffer = {}
     local file = { write = function(_, s) table.insert(buffer, s) end }
     local e = ChannelPressureChangeEvent(0, 2, 64)
@@ -105,7 +113,8 @@ describe('ChannelVoiceEventTests', function()
     local output = table.concat(buffer)
     -- Expected: delta(0x00), command(0xD0|0x02=0xD2), pressure(64=0x40)
     expect(output:byte(1)).to.be_equal_to(0x00)    -- delta time
-    expect(output:byte(2)).to.be_equal_to(0xD2)    -- channel pressure, channel 2
+    expect(output:byte(2)).to.be_equal_to(0xD2)
+    -- channel pressure, channel 2
     expect(output:byte(3)).to.be_equal_to(64)      -- pressure value
     expect(#output).to.be_equal_to(3)
   end)
@@ -181,7 +190,9 @@ describe('VLQRoundTripTests', function()
 end)
 
 describe('RoundTripTests', function()
-  it('should round-trip a MIDI file with note events through write and read', function()
+  it('should round-trip a MIDI file with note events'
+    .. ' through write and read',
+  function()
     local mf = MidiFile{format = 1, ticks = 96}
     local track = Track {
       NoteBeginEvent(0, 0, 60, 100),
@@ -215,7 +226,9 @@ describe('RoundTripTests', function()
     expect(e2.velocity).to.be_equal_to(0)
   end)
 
-  it('should round-trip a format 0 MIDI file with tempo and time signature', function()
+  it('should round-trip a format 0 MIDI file'
+    .. ' with tempo and time signature',
+  function()
     local mf = MidiFile{format = 0, ticks = 480}
     local tempo = SetTempoEvent(0, {})
     tempo:set_tempo(500000)  -- 120 BPM
@@ -245,7 +258,9 @@ describe('RoundTripTests', function()
 end)
 
 describe('LargeDeltaTimeRoundTripTests', function()
-  it('should round-trip a MIDI file with a large delta time (16384 ticks)', function()
+  it('should round-trip a MIDI file with a large delta time'
+    .. ' (16384 ticks)',
+  function()
     local mf = MidiFile{format = 1, ticks = 96}
     local track = Track {
       NoteBeginEvent(0, 0, 60, 100),
@@ -265,7 +280,9 @@ describe('LargeDeltaTimeRoundTripTests', function()
     expect(e2.time_delta).to.be_equal_to(16384)
   end)
 
-  it('should round-trip a MIDI file with a very large delta time (2097152 ticks)', function()
+  it('should round-trip a MIDI file with a very large'
+    .. ' delta time (2097152 ticks)',
+  function()
     local mf = MidiFile{format = 1, ticks = 96}
     local track = Track {
       NoteBeginEvent(0, 0, 60, 100),
@@ -329,7 +346,9 @@ describe('EqualityTests', function()
     expect(a == b).to.be_truthy()
   end)
 
-  it('should consider ProgramChangeEvents with different channels unequal', function()
+  it('should consider ProgramChangeEvents with different'
+    .. ' channels unequal',
+  function()
     local a = ProgramChangeEvent(0, 3, 42)
     local b = ProgramChangeEvent(0, 5, 42)
     expect(a == b).to.be_falsy()
@@ -420,7 +439,9 @@ describe('ConstructorValidationTests', function()
     expect(ok).to.be_falsy()
   end)
 
-  it('should reject ChannelPressureChangeEvent with invalid pressure', function()
+  it('should reject ChannelPressureChangeEvent'
+    .. ' with invalid pressure',
+  function()
     local ok = pcall(function() ChannelPressureChangeEvent(0, 0, 200) end)
     expect(ok).to.be_falsy()
   end)
@@ -435,7 +456,9 @@ describe('ConstructorValidationTests', function()
     expect(ok).to.be_falsy()
   end)
 
-  it('should reject PitchWheelChangeEvent with value exceeding 14-bit range', function()
+  it('should reject PitchWheelChangeEvent'
+    .. ' with value exceeding 14-bit range',
+  function()
     local ok = pcall(function() PitchWheelChangeEvent(0, 0, 16384) end)
     expect(ok).to.be_falsy()
   end)

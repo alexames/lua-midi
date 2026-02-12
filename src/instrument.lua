@@ -13,7 +13,8 @@
 -- local violin = midi.instrument.violin         -- 40
 --
 -- -- Set program change
--- local event = midi.event.ProgramChangeEvent(0, 0, midi.instrument.acoustic_grand)
+-- local event = midi.event.ProgramChangeEvent(
+--   0, 0, midi.instrument.acoustic_grand)
 
 local llx = require 'llx'
 

@@ -22,7 +22,9 @@ describe('TrackTests', function()
     expect(str:match('Track{events={')).to.be_truthy()
   end)
 
-  it('should include NoteBeginEvent in tostring when track has events', function()
+  it('should include NoteBeginEvent in tostring'
+    .. ' when track has events',
+  function()
     local e = NoteBeginEvent(0, 0, 60, 100)
     local track = Track { e }
     local str = tostring(track)
@@ -38,7 +40,8 @@ describe('TrackTests', function()
     local out = table.concat(buffer)
     -- MTrk header (4 bytes) + length (4 bytes) + event data
     expect(out:sub(1, 4)).to.be_equal_to('MTrk')
-    -- NoteBeginEvent(0, 0, 60, 100) = delta(1) + command(1) + note(1) + velocity(1) = 4 bytes
+    -- NoteBeginEvent(0, 0, 60, 100) =
+    --   delta(1) + command(1) + note(1) + velocity(1) = 4 bytes
     -- Track length should be 4, stored as big-endian UInt32
     expect(out:byte(5)).to.be_equal_to(0)
     expect(out:byte(6)).to.be_equal_to(0)

@@ -2,7 +2,8 @@
 -- This module provides validation utilities for MIDI values to ensure they
 -- conform to the MIDI specification constraints.
 --
--- All validate_* functions return (true) on success or (false, error_message) on failure.
+-- All validate_* functions return (true) on success or
+-- (false, error_message) on failure.
 -- All assert_* functions throw an error if validation fails.
 --
 -- @module midi.validation
@@ -12,7 +13,8 @@
 -- local validation = require 'lua-midi.validation'
 --
 -- -- Validate values
--- local ok, err = validation.validate_channel(16)  -- false, "Channel must be 0-15, got 16"
+-- local ok, err = validation.validate_channel(16)
+-- -- false, "Channel must be 0-15, got 16"
 --
 -- -- Assert values (throws on invalid)
 -- validation.assert_note(60)  -- OK
@@ -38,13 +40,15 @@ local function _validate_integer_range(value, name, min, max)
     return false, string.format('%s must be an integer, got %g', name, value)
   end
   if value < min or value > max then
-    return false, string.format('%s must be %d-%d, got %d', name, min, max, value)
+    return false, string.format(
+      '%s must be %d-%d, got %d', name, min, max, value)
   end
   return true
 end
 
 --- Validate a MIDI event time delta.
--- Time deltas must be non-negative integers that fit in VLQ encoding (0-268435455).
+-- Time deltas must be non-negative integers that fit in
+-- VLQ encoding (0-268435455).
 -- @param time_delta number The time delta to validate
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
@@ -291,13 +295,16 @@ function validate_denominator(denominator)
     return false, 'Denominator must be a number'
   end
   if denominator ~= math.floor(denominator) then
-    return false, string.format('Denominator must be an integer, got %g', denominator)
+    return false, string.format(
+      'Denominator must be an integer, got %g', denominator)
   end
   if denominator < 1 or denominator > 256 then
-    return false, string.format('Denominator must be 1-256, got %d', denominator)
+    return false, string.format(
+      'Denominator must be 1-256, got %d', denominator)
   end
   if denominator & (denominator - 1) ~= 0 then
-    return false, string.format('Denominator must be a power of 2, got %d', denominator)
+    return false, string.format(
+      'Denominator must be a power of 2, got %d', denominator)
   end
   return true
 end
@@ -381,7 +388,8 @@ end
 -- @return boolean True if valid, false otherwise
 -- @return string|nil Error message if invalid
 function validate_smpte_fractional_frames(fractional_frames)
-  return _validate_integer_range(fractional_frames, 'SMPTE fractional frames', 0, 99)
+  return _validate_integer_range(
+    fractional_frames, 'SMPTE fractional frames', 0, 99)
 end
 
 --- Assert that a SMPTE fractional frames value is valid, throws error if not.

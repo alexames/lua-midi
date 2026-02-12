@@ -1,7 +1,10 @@
 --- MIDI Track Module.
--- This module defines the `Track` class, which represents a single track in a MIDI file.
--- A MIDI track is a sequence of events (notes, control changes, meta info, etc.),
--- each with its own delta time. Tracks are serialized with a byte length and written
+-- This module defines the `Track` class, which represents
+-- a single track in a MIDI file.
+-- A MIDI track is a sequence of events (notes, control
+-- changes, meta info, etc.),
+-- each with its own delta time. Tracks are serialized with
+-- a byte length and written
 -- with the 'MTrk' header prefix.
 --
 -- @module midi.track
@@ -42,7 +45,8 @@ Track = class 'Track' {
     self.events = events or llx.List{}
   end,
 
-  --- Calculate the total byte length of the track (excluding 'MTrk' and length field).
+  --- Calculate the total byte length of the track
+  -- (excluding 'MTrk' and length field).
   -- Uses a counting writer to measure the exact serialized size, ensuring the
   -- length calculation stays in sync with the write implementation.
   -- @return number Byte length of the track data
@@ -97,7 +101,8 @@ Track = class 'Track' {
   end,
 
   --- Equality comparison for tracks.
-  -- Two tracks are equal if they have the same number of events and all events are equal.
+  -- Two tracks are equal if they have the same number of
+  -- events and all events are equal.
   -- @param other Track The track to compare with
   -- @return boolean True if equal
   __eq = function(self, other)

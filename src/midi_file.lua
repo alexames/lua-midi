@@ -1,7 +1,9 @@
 --- MIDI File Module.
 -- This module defines a `MidiFile` class for reading and writing MIDI files.
--- A MIDI file consists of a header (format, ticks per beat) and a list of tracks.
--- Each track contains MIDI events, such as notes, control changes, and metadata.
+-- A MIDI file consists of a header (format, ticks per beat)
+-- and a list of tracks.
+-- Each track contains MIDI events, such as notes, control
+-- changes, and metadata.
 --
 -- MIDI file formats:
 --
@@ -81,7 +83,9 @@ SmpteDivision = class 'SmpteDivision' {
   end,
 
   __tostring = function(self)
-    return string.format('SMPTE(%g fps, %d tpf)', self.frame_rate, self.ticks_per_frame)
+    return string.format(
+      'SMPTE(%g fps, %d tpf)',
+      self.frame_rate, self.ticks_per_frame)
   end,
 }
 
@@ -107,7 +111,8 @@ MidiFile = class 'MidiFile' {
   -- Accepts either positional arguments (format, ticks, tracks)
   -- or a single table with keys {format=, ticks=, tracks=}.
   -- @function MidiFile:__init
-  -- @param args_or_format number|table Either the format number (0, 1, or 2), or a table with keys
+  -- @param args_or_format number|table Either the format
+  --   number (0, 1, or 2), or a table with keys
   -- @param ticks number Number of ticks per quarter note (default 92)
   -- @param tracks List List of Track objects (default empty)
   -- @return MidiFile A new MidiFile instance
@@ -149,7 +154,8 @@ MidiFile = class 'MidiFile' {
   end,
 
   --- Set SMPTE timing mode.
-  -- Configures the MIDI file to use SMPTE time division instead of musical beats.
+  -- Configures the MIDI file to use SMPTE time division
+  -- instead of musical beats.
   -- @function MidiFile:set_smpte_timing
   -- @param frame_rate number Frame rate (24, 25, 29.97, or 30)
   -- @param ticks_per_frame number Ticks per frame (sub-frame resolution)
@@ -181,7 +187,8 @@ MidiFile = class 'MidiFile' {
   end,
 
   --- Get human-readable format name.
-  -- @return string Description of the format (e.g., "Format 1 (Multi-Track Synchronous)")
+  -- @return string Description of the format
+  --   (e.g., "Format 1 (Multi-Track Synchronous)")
   get_format_name = function(self)
     if self.format == 0 then
       return 'Format 0 (Single Track)'
@@ -201,7 +208,9 @@ MidiFile = class 'MidiFile' {
   validate_format = function(self)
     -- Validate format number
     if self.format < 0 or self.format > 2 then
-      return false, string.format('Invalid format number: %d (must be 0, 1, or 2)', self.format)
+      return false, string.format(
+        'Invalid format number: %d (must be 0, 1, or 2)',
+        self.format)
     end
 
     local track_count = #self.tracks
@@ -260,7 +269,9 @@ MidiFile = class 'MidiFile' {
   _read_file = function(file)
     local midi_file = MidiFile()
     assert(file:read(4) == 'MThd', 'Invalid MIDI file header')
-    assert(midi_io.readUInt32be(file) == 0x00000006, 'Invalid MIDI header length')
+    assert(
+      midi_io.readUInt32be(file) == 0x00000006,
+      'Invalid MIDI header length')
     midi_file.format = midi_io.readUInt16be(file)
     local tracks_count = midi_io.readUInt16be(file)
     local ticks_raw = midi_io.readUInt16be(file)
@@ -278,7 +289,8 @@ MidiFile = class 'MidiFile' {
   end,
 
   --- Read a MidiFile from a filename or file handle.
-  -- @param file_or_filename string|file Either a filename string or an open file handle
+  -- @param file_or_filename string|file Either a filename
+  --   string or an open file handle
   -- @return MidiFile Parsed MIDI file
   -- @raise error if file is invalid or cannot be read
   -- @usage
@@ -323,7 +335,8 @@ MidiFile = class 'MidiFile' {
 
   --- Write a MidiFile to a filename or file handle.
   -- @function MidiFile:write
-  -- @param file_or_filename string|file Either a filename string or an open file handle
+  -- @param file_or_filename string|file Either a filename
+  --   string or an open file handle
   -- @raise error if format validation fails
   -- @usage
   -- song:write('output.mid')
@@ -377,7 +390,8 @@ MidiFile = class 'MidiFile' {
     for _, track in ipairs(self.tracks) do
       table.insert(cloned_tracks, track:clone())
     end
-    local ticks = SmpteDivision:__isinstance(self.ticks) and self.ticks:clone() or self.ticks
+    local ticks = SmpteDivision:__isinstance(self.ticks)
+      and self.ticks:clone() or self.ticks
     return MidiFile(self.format, ticks, cloned_tracks)
   end,
 
