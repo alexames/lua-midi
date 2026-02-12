@@ -264,7 +264,7 @@ MidiFile = class 'MidiFile' {
     midi_file.format = midi_io.readUInt16be(file)
     local tracks_count = midi_io.readUInt16be(file)
     local ticks_raw = midi_io.readUInt16be(file)
-    
+
     -- Check if SMPTE format (MSB set)
     if ticks_raw & 0x8000 ~= 0 then
       midi_file.ticks = _decode_smpte(ticks_raw)
@@ -303,12 +303,12 @@ MidiFile = class 'MidiFile' {
   _write_file = function(self, file)
     -- Validate format before writing
     self:assert_valid_format()
-    
+
     file:write('MThd')
     midi_io.writeUInt32be(file, 0x00000006)
     midi_io.writeUInt16be(file, self.format)
     midi_io.writeUInt16be(file, #self.tracks)
-    
+
     -- Write ticks (handle SMPTE format)
     if SmpteDivision:__isinstance(self.ticks) then
       -- Convert signed encoding to unsigned 16-bit for writing

@@ -195,7 +195,7 @@ describe('Format2ValidationTests', function()
     local track2 = Track()
     table.insert(mf.tracks, track1)
     table.insert(mf.tracks, track2)
-    
+
     expect(mf:get_pattern(1)).to.be_equal_to(track1)
   end)
 
@@ -205,7 +205,7 @@ describe('Format2ValidationTests', function()
     local track2 = Track()
     table.insert(mf.tracks, track1)
     table.insert(mf.tracks, track2)
-    
+
     expect(mf:get_pattern(2)).to.be_equal_to(track2)
   end)
 
@@ -214,14 +214,14 @@ describe('Format2ValidationTests', function()
     table.insert(mf.tracks, Track())
     table.insert(mf.tracks, Track())
     table.insert(mf.tracks, Track())
-    
+
     expect(mf:get_pattern_count()).to.be_equal_to(3)
   end)
 
   it('should throw error when get_pattern is called for non-format-2', function()
     local mf = MidiFile{format = 1}
     table.insert(mf.tracks, Track())
-    
+
     local success = pcall(function()
       mf:get_pattern(1)
     end)
@@ -230,7 +230,7 @@ describe('Format2ValidationTests', function()
 
   it('should throw error when get_pattern_count is called for non-format-2', function()
     local mf = MidiFile{format = 1}
-    
+
     local success = pcall(function()
       mf:get_pattern_count()
     end)
@@ -268,7 +268,7 @@ describe('WriteValidationTests', function()
   it('should throw error when write is called on invalid format', function()
     local mf = MidiFile{format = 0}
     -- Format 0 with 0 tracks is invalid
-    
+
     local success = pcall(function()
       local bytes = mf:__tobytes()
     end)
