@@ -3,6 +3,7 @@
 
 local unit = require 'llx.unit'
 
+local midi_io = require 'lua-midi.io'
 local event = require 'lua-midi.event'
 local SystemExclusiveEvent = event.SystemExclusiveEvent
 local MIDITimeCodeQuarterFrameEvent = event.MIDITimeCodeQuarterFrameEvent
@@ -289,6 +290,24 @@ describe('SystemMessageValidationTests', function()
   it('should accept SongSelectEvent at boundary values', function()
     SongSelectEvent(0, 0)
     SongSelectEvent(0, 127)
+  end)
+end)
+
+describe('SysExSafetyLimitTests', function()
+  it('should error when SysEx message exceeds 1MB safety limit', function()
+    -- Create a mock file that always returns 0x00 (never 0xF7)
+    local count = 0
+    local mock_file = {
+      read = function(_, n)
+        count = count + n
+        return string.char(0x00):rep(n)
+      end,
+    }
+    local ok, err = pcall(function()
+      SystemExclusiveEvent.read(mock_file, 0)
+    end)
+    expect(ok).to.be_falsy()
+    expect(tostring(err):match('1MB safety limit')).to.be_truthy()
   end)
 end)
 

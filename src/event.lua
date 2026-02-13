@@ -482,6 +482,8 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
     local byte = midi_io.readUInt8be(file)
     while byte ~= 0xF7 do
       table.insert(data, byte)
+      assert(#data <= 1048576,
+        'SysEx message exceeds 1MB safety limit')
       byte = midi_io.readUInt8be(file)
     end
     return SystemExclusiveEvent(time_delta, data)
