@@ -957,6 +957,11 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
     self:set_tempo(math.floor(60000000 / bpm))
   end,
 
+  __tostring = function(self)
+    return string.format(
+      'SetTempoEvent(%d, tempo=%d)',
+      self.time_delta, self.tempo)
+  end,
 }
 
 --- SMPTE Offset meta event (0x54).
@@ -1038,6 +1043,14 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
     self.seconds = seconds
     self.frames = frames
     self.fractional_frames = fractional_frames
+  end,
+
+  __tostring = function(self)
+    return string.format(
+      'SMPTEOffsetEvent(%d, %02d:%02d:%02d:%02d.%02d)',
+      self.time_delta,
+      self.hours, self.minutes, self.seconds,
+      self.frames, self.fractional_frames)
   end,
 }
 
@@ -1126,6 +1139,13 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
     self.clocks_per_metronome_click = clocks_per_click
     self.thirty_seconds_per_quarter = thirty_seconds_per_quarter
   end,
+
+  __tostring = function(self)
+    return string.format(
+      'TimeSignatureEvent(%d, %d/%d)',
+      self.time_delta,
+      self.numerator, self.denominator)
+  end,
 }
 
 --- Key Signature meta event (0x59).
@@ -1185,6 +1205,14 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
     validation.assert_boolean(is_minor, 'is_minor')
     self.sharps_flats = sharps_flats
     self.is_minor = is_minor
+  end,
+
+  __tostring = function(self)
+    return string.format(
+      'KeySignatureEvent(%d, sf=%d, %s)',
+      self.time_delta,
+      self.sharps_flats,
+      self.is_minor and 'minor' or 'major')
   end,
 }
 

@@ -32,7 +32,7 @@ describe('EventTests', function()
 
   it('should convert meta event to string correctly', function()
     local e = SetTempoEvent(0, {0x07, 0xA1, 0x20})
-    expect(tostring(e)).to.be_equal_to('SetTempoEvent(0, 7, 161, 32)')
+    expect(tostring(e)).to.be_equal_to('SetTempoEvent(0, tempo=500000)')
   end)
 
   it('should write correct bytes for SetTempoEvent', function()
