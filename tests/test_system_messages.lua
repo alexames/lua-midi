@@ -311,4 +311,76 @@ describe('SysExSafetyLimitTests', function()
   end)
 end)
 
+describe('RunningStatusCancellationTests', function()
+  local function null_file()
+    return { write = function() end }
+  end
+
+  it('should cancel running status after SysEx write', function()
+    local ctx = { previous_command_byte = 0x90 }
+    local sysex = SystemExclusiveEvent(0, {0x41})
+    sysex:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0)
+  end)
+
+  it('should cancel running status after'
+    .. ' MIDITimeCodeQuarterFrame write',
+  function()
+    local ctx = { previous_command_byte = 0x90 }
+    local mtc = MIDITimeCodeQuarterFrameEvent(0, 3, 15)
+    mtc:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0)
+  end)
+
+  it('should cancel running status after'
+    .. ' SongPositionPointer write',
+  function()
+    local ctx = { previous_command_byte = 0x90 }
+    local spp = SongPositionPointerEvent(0, 1024)
+    spp:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0)
+  end)
+
+  it('should cancel running status after SongSelect write',
+  function()
+    local ctx = { previous_command_byte = 0x90 }
+    local ss = SongSelectEvent(0, 42)
+    ss:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0)
+  end)
+
+  it('should cancel running status after TuneRequest write',
+  function()
+    local ctx = { previous_command_byte = 0x90 }
+    local tr = TuneRequestEvent(0)
+    tr:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0)
+  end)
+
+  it('should NOT cancel running status after'
+    .. ' TimingClock write',
+  function()
+    local ctx = { previous_command_byte = 0x90 }
+    local clock = TimingClockEvent(0)
+    clock:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0x90)
+  end)
+
+  it('should NOT cancel running status after Start write',
+  function()
+    local ctx = { previous_command_byte = 0x90 }
+    local start = StartEvent(0)
+    start:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0x90)
+  end)
+
+  it('should NOT cancel running status after Stop write',
+  function()
+    local ctx = { previous_command_byte = 0x90 }
+    local stop = StopEvent(0)
+    stop:write(null_file(), ctx)
+    expect(ctx.previous_command_byte).to.be_equal_to(0x90)
+  end)
+end)
+
 run_unit_tests()

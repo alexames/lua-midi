@@ -490,15 +490,18 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
   end,
 
   --- Write a SysEx event to file.
+  -- Per the MIDI spec, SysEx cancels running status.
   -- @function SystemExclusiveEvent:write
   -- @param file file Binary output file handle
-  write = function(self, file)
+  -- @param context table Write context for running status
+  write = function(self, file, context)
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xF0)
     for _, byte in ipairs(self.data) do
       midi_io.writeUInt8be(file, byte)
     end
     midi_io.writeUInt8be(file, 0xF7)
+    if context then context.previous_command_byte = 0 end
   end,
 
   __eq = function(self, other)
@@ -548,11 +551,12 @@ MIDITimeCodeQuarterFrameEvent =
     return MIDITimeCodeQuarterFrameEvent(time_delta, message_type, values)
   end,
 
-  write = function(self, file)
+  write = function(self, file, context)
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xF1)
     local data = ((self.message_type & 0x07) << 4) | (self.values & 0x0F)
     midi_io.writeUInt8be(file, data)
+    if context then context.previous_command_byte = 0 end
   end,
 
   __tostring = function(self)
@@ -584,10 +588,11 @@ SongPositionPointerEvent =
     return SongPositionPointerEvent(time_delta, midi_io.readUInt14le(file))
   end,
 
-  write = function(self, file)
+  write = function(self, file, context)
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xF2)
     midi_io.writeUInt14le(file, self.position)
+    if context then context.previous_command_byte = 0 end
   end,
 
   __tostring = function(self)
@@ -616,10 +621,11 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
     return SongSelectEvent(time_delta, song_number)
   end,
 
-  write = function(self, file)
+  write = function(self, file, context)
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xF3)
     midi_io.writeUInt8be(file, self.song_number)
+    if context then context.previous_command_byte = 0 end
   end,
 
   __tostring = function(self)
@@ -633,9 +639,13 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
 -- These events consist only of a status byte and a time delta.
 -- @param name string Class name
 -- @param status_byte number MIDI status byte for this event
+-- @param cancels_running_status boolean Whether this event
+--   cancels running status per the MIDI spec (true for
+--   system common messages, false for system real-time)
 -- @return table The new event class
 -- @local
-local function _simple_system_event(name, status_byte)
+local function _simple_system_event(
+    name, status_byte, cancels_running_status)
   local EventClass
   EventClass = class(name) : extends(TimedEvent) {
     __init = function(self, time_delta)
@@ -646,9 +656,12 @@ local function _simple_system_event(name, status_byte)
       return EventClass(time_delta)
     end,
 
-    write = function(self, file)
+    write = function(self, file, context)
       TimedEvent._write_event_time(file, self.time_delta)
       midi_io.writeUInt8be(file, status_byte)
+      if cancels_running_status and context then
+        context.previous_command_byte = 0
+      end
     end,
 
     __tostring = function(self)
@@ -662,7 +675,7 @@ end
 -- Requests that analog synthesizers tune their oscillators.
 -- @type TuneRequestEvent
 -- @field time_delta number Delta time in ticks
-TuneRequestEvent = _simple_system_event('TuneRequestEvent', 0xF6)
+TuneRequestEvent = _simple_system_event('TuneRequestEvent', 0xF6, true)
 
 --- Timing Clock event (0xF8).
 -- Sent 24 times per quarter note for synchronization.
