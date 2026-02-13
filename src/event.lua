@@ -989,6 +989,12 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
         'SMPTEOffsetEvent expects 0 or 5 data bytes, got %d',
         #self.data), 2)
     end
+    validation.assert_smpte_hours(self.hours)
+    validation.assert_smpte_minutes(self.minutes)
+    validation.assert_smpte_seconds(self.seconds)
+    validation.assert_smpte_frames(self.frames)
+    validation.assert_smpte_fractional_frames(
+      self.fractional_frames)
     self.data = nil  -- canonical fields are the sole source of truth
   end,
 
@@ -1063,6 +1069,14 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
         'TimeSignatureEvent expects 0 or 4 data bytes, got %d',
         #self.data), 2)
     end
+    validation.assert_7bit(self.numerator, 'Numerator')
+    validation.assert_denominator(self.denominator)
+    validation.assert_7bit(
+      self.clocks_per_metronome_click,
+      'Clocks per metronome click')
+    validation.assert_7bit(
+      self.thirty_seconds_per_quarter,
+      'Thirty-seconds per quarter')
     self.data = nil  -- canonical fields are the sole source of truth
   end,
 
@@ -1141,6 +1155,8 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
         'KeySignatureEvent expects 0 or 2 data bytes, got %d',
         #self.data), 2)
     end
+    validation.assert_sharps_flats(self.sharps_flats)
+    validation.assert_boolean(self.is_minor, 'is_minor')
     self.data = nil  -- canonical fields are the sole source of truth
   end,
 

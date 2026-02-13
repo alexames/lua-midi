@@ -473,6 +473,95 @@ describe('MalformedMetaEventDataTests', function()
   end)
 end)
 
+describe('ConstructorFieldValidationTests', function()
+  it('should reject SMPTEOffsetEvent with invalid hours'
+    .. ' in raw data',
+  function()
+    local ok = pcall(function()
+      SMPTEOffsetEvent(0, {24, 0, 0, 0, 0})
+    end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject SMPTEOffsetEvent with invalid minutes'
+    .. ' in raw data',
+  function()
+    local ok = pcall(function()
+      SMPTEOffsetEvent(0, {0, 60, 0, 0, 0})
+    end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject SMPTEOffsetEvent with invalid seconds'
+    .. ' in raw data',
+  function()
+    local ok = pcall(function()
+      SMPTEOffsetEvent(0, {0, 0, 60, 0, 0})
+    end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject SMPTEOffsetEvent with invalid frames'
+    .. ' in raw data',
+  function()
+    local ok = pcall(function()
+      SMPTEOffsetEvent(0, {0, 0, 0, 30, 0})
+    end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject SMPTEOffsetEvent with invalid'
+    .. ' fractional frames in raw data',
+  function()
+    local ok = pcall(function()
+      SMPTEOffsetEvent(0, {0, 0, 0, 0, 100})
+    end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept SMPTEOffsetEvent with valid boundary'
+    .. ' values in raw data',
+  function()
+    local s = SMPTEOffsetEvent(0, {23, 59, 59, 29, 99})
+    expect(s.hours).to.be_equal_to(23)
+    expect(s.minutes).to.be_equal_to(59)
+    expect(s.seconds).to.be_equal_to(59)
+    expect(s.frames).to.be_equal_to(29)
+    expect(s.fractional_frames).to.be_equal_to(99)
+  end)
+
+  it('should reject TimeSignatureEvent with invalid'
+    .. ' numerator in raw data',
+  function()
+    local ok = pcall(function()
+      TimeSignatureEvent(0, {128, 2, 24, 8})
+    end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should reject KeySignatureEvent with invalid'
+    .. ' sharps/flats in raw data',
+  function()
+    -- 248 unsigned = -8 signed, which is out of range
+    local ok = pcall(function()
+      KeySignatureEvent(0, {248, 0})
+    end)
+    expect(ok).to.be_falsy()
+  end)
+
+  it('should accept KeySignatureEvent with valid'
+    .. ' boundary sharps/flats in raw data',
+  function()
+    -- -7 sharps/flats = 249 unsigned
+    local ks = KeySignatureEvent(0, {249, 0})
+    expect(ks.sharps_flats).to.be_equal_to(-7)
+    -- +7 sharps/flats
+    local ks2 = KeySignatureEvent(0, {7, 1})
+    expect(ks2.sharps_flats).to.be_equal_to(7)
+    expect(ks2.is_minor).to.be_truthy()
+  end)
+end)
+
 describe('SetterValidationTests', function()
   it('should reject set_tempo with zero', function()
     local t = SetTempoEvent(0, {})
