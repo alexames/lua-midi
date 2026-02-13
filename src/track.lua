@@ -45,19 +45,19 @@ Track = class 'Track' {
     self.events = events or llx.List{}
   end,
 
-  --- Calculate the total byte length of the track
-  -- (excluding 'MTrk' and length field).
-  -- Uses a counting writer to measure the exact serialized size, ensuring the
-  -- length calculation stays in sync with the write implementation.
-  -- @return number Byte length of the track data
+  --- Serialize track event data to a string buffer.
+  -- @return string The serialized track data
   -- @local
-  _get_track_byte_length = function(self)
-    local writer = midi_io.counting_writer()
+  _serialize_events = function(self)
+    local parts = {}
+    local buffer = {
+      write = function(_, s) parts[#parts + 1] = s end
+    }
     local context = _new_context()
     for _, event in ipairs(self.events) do
-      event:write(writer, context)
+      event:write(buffer, context)
     end
-    return writer.count
+    return table.concat(parts)
   end,
 
   --- Read a Track from the given file handle.
@@ -87,17 +87,15 @@ Track = class 'Track' {
   end,
 
   --- Write a Track to the given file handle.
-  -- Includes the 'MTrk' header and track length.
+  -- Serializes events to a buffer in a single pass, then
+  -- writes the header with the correct byte length.
   -- @function Track:write
   -- @param file file A binary output file handle
   write = function(self, file)
+    local track_data = self:_serialize_events()
     file:write('MTrk')
-    midi_io.writeUInt32be(file, self:_get_track_byte_length())
-
-    local context = _new_context()
-    for _, event in ipairs(self.events) do
-      event:write(file, context)
-    end
+    midi_io.writeUInt32be(file, #track_data)
+    file:write(track_data)
   end,
 
   --- Equality comparison for tracks.
