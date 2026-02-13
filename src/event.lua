@@ -636,13 +636,14 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
 -- @return table The new event class
 -- @local
 local function _simple_system_event(name, status_byte)
-  return class(name) : extends(TimedEvent) {
+  local EventClass
+  EventClass = class(name) : extends(TimedEvent) {
     __init = function(self, time_delta)
       TimedEvent.__init(self, time_delta)
     end,
 
     read = function(file, time_delta)
-      return _M[name](time_delta)
+      return EventClass(time_delta)
     end,
 
     write = function(self, file)
@@ -654,6 +655,7 @@ local function _simple_system_event(name, status_byte)
       return string.format('%s(%d)', name, self.time_delta)
     end,
   }
+  return EventClass
 end
 
 --- Tune Request event (0xF6).
