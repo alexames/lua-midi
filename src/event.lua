@@ -736,9 +736,13 @@ MetaEvent = class 'MetaEvent' : extends(TimedEvent) {
       table.insert(data, midi_io.readUInt8be(file))
     end
     local meta_event = MetaEvent.types[meta_command]
-    assert(meta_event, string.format(
-      'Meta event %02X not recognized', meta_command))
-    return meta_event(time_delta, data)
+    if meta_event then
+      return meta_event(time_delta, data)
+    else
+      local event = MetaEvent(time_delta, data)
+      event.meta_command = meta_command
+      return event
+    end
   end,
 
   --- Write the meta event to file.

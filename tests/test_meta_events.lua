@@ -4,12 +4,17 @@
 local unit = require 'llx.unit'
 
 local event = require 'lua-midi.event'
+local MetaEvent = event.MetaEvent
 local SetTempoEvent = event.SetTempoEvent
 local TimeSignatureEvent = event.TimeSignatureEvent
 local KeySignatureEvent = event.KeySignatureEvent
 local SMPTEOffsetEvent = event.SMPTEOffsetEvent
 local ProgramNameEvent = event.ProgramNameEvent
 local DeviceNameEvent = event.DeviceNameEvent
+local EndOfTrackEvent = event.EndOfTrackEvent
+local midi_io = require 'lua-midi.io'
+local MidiFile = require 'lua-midi.midi_file'.MidiFile
+local Track = require 'lua-midi.track'.Track
 
 _ENV = unit.create_test_env(_ENV)
 
@@ -607,6 +612,109 @@ describe('SetterValidationTests', function()
     expect(s.seconds).to.be_equal_to(45)
     expect(s.frames).to.be_equal_to(12)
     expect(s.fractional_frames).to.be_equal_to(50)
+  end)
+end)
+
+describe('UnknownMetaEventTests', function()
+  it('should read an unknown meta event type without error', function()
+    -- Build a binary buffer containing an unknown meta event (type 0x0A)
+    -- Format: delta(0x00), 0xFF, meta_type(0x0A), length(3), data(0x01,0x02,0x03)
+    local buffer = {}
+    local pos = 0
+    local file = {
+      write = function(_, s) table.insert(buffer, s) end,
+      read = function(_, n)
+        local joined = table.concat(buffer)
+        local result = joined:sub(pos + 1, pos + n)
+        pos = pos + n
+        return result
+      end,
+    }
+    -- Write: meta_type, length (VLQ), data bytes
+    midi_io.writeUInt8be(file, 0x0A)       -- unknown meta type
+    midi_io.writeVLQ(file, 3)              -- length = 3
+    midi_io.writeUInt8be(file, 0x01)       -- data byte 1
+    midi_io.writeUInt8be(file, 0x02)       -- data byte 2
+    midi_io.writeUInt8be(file, 0x03)       -- data byte 3
+    -- Read it back via MetaEvent.read
+    local evt = MetaEvent.read(file, 0)
+    expect(evt).to.be_truthy()
+  end)
+
+  it('should preserve meta_command and data on unknown meta event', function()
+    local buffer = {}
+    local pos = 0
+    local file = {
+      write = function(_, s) table.insert(buffer, s) end,
+      read = function(_, n)
+        local joined = table.concat(buffer)
+        local result = joined:sub(pos + 1, pos + n)
+        pos = pos + n
+        return result
+      end,
+    }
+    midi_io.writeUInt8be(file, 0x0A)
+    midi_io.writeVLQ(file, 3)
+    midi_io.writeUInt8be(file, 0x01)
+    midi_io.writeUInt8be(file, 0x02)
+    midi_io.writeUInt8be(file, 0x03)
+    local evt = MetaEvent.read(file, 42)
+    expect(evt.meta_command).to.be_equal_to(0x0A)
+    expect(evt.time_delta).to.be_equal_to(42)
+    expect(#evt.data).to.be_equal_to(3)
+    expect(evt.data[1]).to.be_equal_to(0x01)
+    expect(evt.data[2]).to.be_equal_to(0x02)
+    expect(evt.data[3]).to.be_equal_to(0x03)
+  end)
+
+  it('should round-trip an unknown meta event through write and read', function()
+    -- Build a binary buffer containing an unknown meta event (type 0x0A)
+    local buffer = {}
+    local pos = 0
+    local file = {
+      write = function(_, s) table.insert(buffer, s) end,
+      read = function(_, n)
+        local joined = table.concat(buffer)
+        local result = joined:sub(pos + 1, pos + n)
+        pos = pos + n
+        return result
+      end,
+    }
+    -- Write the unknown meta event
+    midi_io.writeUInt8be(file, 0x0A)
+    midi_io.writeVLQ(file, 3)
+    midi_io.writeUInt8be(file, 0x01)
+    midi_io.writeUInt8be(file, 0x02)
+    midi_io.writeUInt8be(file, 0x03)
+    -- Read it
+    local evt = MetaEvent.read(file, 10)
+    -- Now write the event back out to a new buffer
+    local buffer2 = {}
+    local pos2 = 0
+    local file2 = {
+      write = function(_, s) table.insert(buffer2, s) end,
+      read = function(_, n)
+        local joined = table.concat(buffer2)
+        local result = joined:sub(pos2 + 1, pos2 + n)
+        pos2 = pos2 + n
+        return result
+      end,
+    }
+    evt:write(file2)
+    -- Read back the written bytes: delta, 0xFF, meta_type, length, data
+    pos2 = 0
+    local delta = midi_io.readVLQ(file2)
+    expect(delta).to.be_equal_to(10)
+    local ff = midi_io.readUInt8be(file2)
+    expect(ff).to.be_equal_to(0xFF)
+    -- Now read via MetaEvent.read (which reads meta_type, length, data)
+    local evt2 = MetaEvent.read(file2, delta)
+    expect(evt2.meta_command).to.be_equal_to(0x0A)
+    expect(#evt2.data).to.be_equal_to(3)
+    expect(evt2.data[1]).to.be_equal_to(0x01)
+    expect(evt2.data[2]).to.be_equal_to(0x02)
+    expect(evt2.data[3]).to.be_equal_to(0x03)
+    expect(evt == evt2).to.be_truthy()
   end)
 end)
 
