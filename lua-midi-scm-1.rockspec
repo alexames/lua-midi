@@ -40,6 +40,7 @@ build = {
       ["lua-midi.event"] = "src/event.lua",
       ["lua-midi.instrument"] = "src/instrument.lua",
       ["lua-midi.io"] = "src/io.lua",
+      ["lua-midi.percussion"] = "src/percussion.lua",
       ["lua-midi.midi_file"] = "src/midi_file.lua",
       ["lua-midi.track"] = "src/track.lua",
       ["lua-midi.validation"] = "src/validation.lua",
