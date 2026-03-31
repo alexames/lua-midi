@@ -81,7 +81,7 @@ instrument = llx.enum 'instrument' {
   'contrabass',
   'tremolo_strings',
   'pizzicato_strings',
-  'orchestral_strings',
+  'orchestral_harp',
   'timpani',
 
   -- Ensemble
