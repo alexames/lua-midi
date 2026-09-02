@@ -3,7 +3,7 @@ package = "lua-midi"
 version = "scm-1"
 
 source = {
-   url = "git://github.com/alexames/lua-midi.git",
+   url = "git+https://github.com/alexames/lua-midi.git",
    branch = "main",
 }
 
