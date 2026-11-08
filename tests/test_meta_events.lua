@@ -1,6 +1,7 @@
 -- test_meta_events.lua
 -- Unit tests for structured meta event parsing
 
+local compat = require 'llx.compat'
 local unit = require 'llx.unit'
 
 local event = require 'lua-midi.event'
@@ -153,7 +154,7 @@ describe('TimeSignatureEventTests', function()
     -- regularity with set_time_signature.
     local ts = TimeSignatureEvent(0, {4, 2, 24, 8})
     -- 4/4 time (denominator_power=2)
-    expect(math.type(ts.denominator)).to.be_equal_to('integer')
+    expect(compat.math_type(ts.denominator)).to.be_equal_to('integer')
   end)
 
   it('should produce equal events from raw bytes'

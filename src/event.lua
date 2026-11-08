@@ -34,11 +34,15 @@
 -- local note_off = event.NoteEndEvent(480, 0, 60, 0)
 
 local llx = require 'llx'
+local compat = require 'llx.compat'
 local midi_io = require 'lua-midi.io'
 local validation = require 'lua-midi.validation'
 
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
+
+local band, bor = compat.band, compat.bor
+local lshift, rshift = compat.lshift, compat.rshift
 
 --- Compute integer log base 2 of a power-of-two value.
 -- Avoids floating-point imprecision from math.log.
@@ -46,10 +50,10 @@ local class = llx.class
 -- @return number The exponent p such that 2^p == n
 -- @local
 local function _ilog2(n)
-  assert(n > 0 and (n & (n - 1)) == 0,
-    string.format('_ilog2 requires a positive power of 2, got %s', tostring(n)))
+  assert(n > 0 and band(n, n - 1) == 0,
+    compat.format('_ilog2 requires a positive power of 2, got %s', tostring(n)))
   local p = 0
-  while n > 1 do n = n >> 1; p = p + 1 end
+  while n > 1 do n = rshift(n, 1); p = p + 1 end
   return p
 end
 
@@ -118,7 +122,7 @@ TimedEvent = class 'TimedEvent' {
         table.insert(args, self[field])
       end
     end
-    return self.class(table.unpack(args))
+    return self.class(compat.unpack(args))
   end,
 }
 
@@ -162,7 +166,7 @@ Event = class 'Event' {
       if SystemEventType then
         return SystemEventType.read(file, time_delta)
       else
-        error(string.format('Unknown system message: 0x%02X', command_byte))
+        error(compat.format('Unknown system message: 0x%02X', command_byte))
       end
     end
 
@@ -174,10 +178,10 @@ Event = class 'Event' {
       context.previous_command_byte = command_byte
     end
 
-    local channel = command_byte & 0x0F
-    local command = command_byte & 0xF0
+    local channel = band(command_byte, 0x0F)
+    local command = band(command_byte, 0xF0)
     local EventType = Event.types[command]
-    assert(EventType, string.format('Unknown event command: 0x%02X', command))
+    assert(EventType, compat.format('Unknown event command: 0x%02X', command))
 
     if EventType.schema then
       -- Read arguments from file according to schema
@@ -187,7 +191,7 @@ Event = class 'Event' {
         table.insert(args, event_byte or midi_io.readUInt8be(file))
         event_byte = nil
       end
-      return EventType(time_delta, channel, table.unpack(args))
+      return EventType(time_delta, channel, compat.unpack(args))
     else
       -- Use custom read function if defined
       return EventType.read(file, time_delta, channel, context, event_byte)
@@ -200,7 +204,7 @@ Event = class 'Event' {
   -- @param context table Context with previous_command_byte for running status
   write = function(self, file, context)
     TimedEvent._write_event_time(file, self.time_delta)
-    local command_byte = self.command | self.channel
+    local command_byte = bor(self.command, self.channel)
 
     if command_byte ~= context.previous_command_byte then
       midi_io.writeUInt8be(file, command_byte)
@@ -211,7 +215,7 @@ Event = class 'Event' {
       for _, field in ipairs(self.schema) do
         local byte = assert(
           self[field],
-          string.format('No field %s on Event', field))
+          compat.format('No field %s on Event', field))
         midi_io.writeUInt8be(file, byte)
       end
     end
@@ -249,7 +253,7 @@ Event = class 'Event' {
         table.insert(args, self[field])
       end
     end
-    return self.class(table.unpack(args))
+    return self.class(compat.unpack(args))
   end,
 
   --- String representation of the event for debugging/logging.
@@ -261,11 +265,11 @@ Event = class 'Event' {
       for _, field in ipairs(fields) do
         local value = assert(
           self[field],
-          string.format('No field %s on Event', field))
+          compat.format('No field %s on Event', field))
         table.insert(argument_strings, value)
       end
     end
-    return string.format(
+    return compat.format(
       '%s(%s)',
       self.class.__name,
       table.concat(argument_strings, ', '))
@@ -446,7 +450,7 @@ PitchWheelChangeEvent = class 'PitchWheelChangeEvent' : extends(Event) {
   read = function(file, time_delta, channel, context, event_byte)
     local lsb = event_byte or midi_io.readUInt8be(file)
     local msb = midi_io.readUInt8be(file)
-    return PitchWheelChangeEvent(time_delta, channel, (msb << 7) | lsb)
+    return PitchWheelChangeEvent(time_delta, channel, bor(lshift(msb, 7), lsb))
   end,
 
   write = function(self, file, context)
@@ -470,7 +474,7 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
   -- @param data table Array of data bytes (excluding 0xF0 and 0xF7)
   __init = function(self, time_delta, data)
     TimedEvent.__init(self, time_delta)
-    self.data = data and {table.unpack(data)} or {}
+    self.data = data and {compat.unpack(data)} or {}
   end,
 
   --- Read a SysEx event from file.
@@ -519,7 +523,7 @@ SystemExclusiveEvent = class 'SystemExclusiveEvent' : extends(TimedEvent) {
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'SystemExclusiveEvent(%d, %d bytes)',
       self.time_delta, #self.data)
   end,
@@ -546,21 +550,22 @@ MIDITimeCodeQuarterFrameEvent =
 
   read = function(file, time_delta)
     local data = midi_io.readUInt8be(file)
-    local message_type = (data >> 4) & 0x07
-    local values = data & 0x0F
+    local message_type = band(rshift(data, 4), 0x07)
+    local values = band(data, 0x0F)
     return MIDITimeCodeQuarterFrameEvent(time_delta, message_type, values)
   end,
 
   write = function(self, file, context)
     TimedEvent._write_event_time(file, self.time_delta)
     midi_io.writeUInt8be(file, 0xF1)
-    local data = ((self.message_type & 0x07) << 4) | (self.values & 0x0F)
+    local data = bor(lshift(band(self.message_type, 0x07), 4),
+                     band(self.values, 0x0F))
     midi_io.writeUInt8be(file, data)
     if context then context.previous_command_byte = 0 end
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'MIDITimeCodeQuarterFrameEvent'
         .. '(%d, type=%d, values=%d)',
       self.time_delta,
@@ -596,7 +601,7 @@ SongPositionPointerEvent =
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'SongPositionPointerEvent(%d, position=%d)',
       self.time_delta, self.position)
   end,
@@ -629,7 +634,7 @@ SongSelectEvent = class 'SongSelectEvent' : extends(TimedEvent) {
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'SongSelectEvent(%d, song=%d)',
       self.time_delta, self.song_number)
   end,
@@ -665,7 +670,7 @@ local function _simple_system_event(
     end,
 
     __tostring = function(self)
-      return string.format('%s(%d)', name, self.time_delta)
+      return compat.format('%s(%d)', name, self.time_delta)
     end,
   }
   return EventClass
@@ -728,7 +733,7 @@ MetaEvent = class 'MetaEvent' : extends(TimedEvent) {
   -- @param data table Event data bytes
   __init = function(self, time_delta, data)
     TimedEvent.__init(self, time_delta)
-    self.data = {table.unpack(data)}
+    self.data = {compat.unpack(data)}
   end,
 
   --- Get the data bytes for this meta event.
@@ -802,7 +807,7 @@ MetaEvent = class 'MetaEvent' : extends(TimedEvent) {
     for i = 1, #data do
       table.insert(argument_strings, data[i])
     end
-    return string.format(
+    return compat.format(
       '%s(%s)',
       self.class.__name,
       table.concat(argument_strings, ', '))
@@ -917,11 +922,12 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   __init = function(self, time_delta, data)
     self.MetaEvent.__init(self, time_delta, data)
     if #self.data == 3 then
-      self.tempo = (self.data[1] << 16) | (self.data[2] << 8) | self.data[3]
+      self.tempo = bor(lshift(self.data[1], 16),
+                       bor(lshift(self.data[2], 8), self.data[3]))
     elseif #self.data == 0 then
       self.tempo = 500000  -- default 120 BPM
     else
-      error(string.format(
+      error(compat.format(
         'SetTempoEvent expects 0 or 3 data bytes, got %d',
         #self.data), 2)
     end
@@ -931,9 +937,9 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
 
   _get_data = function(self)
     return {
-      (self.tempo >> 16) & 0xFF,
-      (self.tempo >> 8) & 0xFF,
-      self.tempo & 0xFF,
+      band(rshift(self.tempo, 16), 0xFF),
+      band(rshift(self.tempo, 8), 0xFF),
+      band(self.tempo, 0xFF),
     }
   end,
 
@@ -971,7 +977,7 @@ SetTempoEvent = class 'SetTempoEvent' : extends(MetaEvent) {
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'SetTempoEvent(%d, tempo=%d)',
       self.time_delta, self.tempo)
   end,
@@ -1003,7 +1009,7 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
       self.frames = 0
       self.fractional_frames = 0
     else
-      error(string.format(
+      error(compat.format(
         'SMPTEOffsetEvent expects 0 or 5 data bytes, got %d',
         #self.data), 2)
     end
@@ -1059,7 +1065,7 @@ SMPTEOffsetEvent = class 'SMPTEOffsetEvent' : extends(MetaEvent) {
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'SMPTEOffsetEvent(%d, %02d:%02d:%02d:%02d.%02d)',
       self.time_delta,
       self.hours, self.minutes, self.seconds,
@@ -1082,7 +1088,7 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
     self.MetaEvent.__init(self, time_delta, data)
     if #self.data == 4 then
       self.numerator = self.data[1]
-      self.denominator = 1 << self.data[2]
+      self.denominator = lshift(1, self.data[2])
       self.clocks_per_metronome_click = self.data[3]
       self.thirty_seconds_per_quarter = self.data[4]
     elseif #self.data == 0 then
@@ -1091,7 +1097,7 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
       self.clocks_per_metronome_click = 24
       self.thirty_seconds_per_quarter = 8
     else
-      error(string.format(
+      error(compat.format(
         'TimeSignatureEvent expects 0 or 4 data bytes, got %d',
         #self.data), 2)
     end
@@ -1154,7 +1160,7 @@ TimeSignatureEvent = class 'TimeSignatureEvent' : extends(MetaEvent) {
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'TimeSignatureEvent(%d, %d/%d)',
       self.time_delta,
       self.numerator, self.denominator)
@@ -1184,7 +1190,7 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
       self.sharps_flats = 0
       self.is_minor = false
     else
-      error(string.format(
+      error(compat.format(
         'KeySignatureEvent expects 0 or 2 data bytes, got %d',
         #self.data), 2)
     end
@@ -1221,7 +1227,7 @@ KeySignatureEvent = class 'KeySignatureEvent' : extends(MetaEvent) {
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'KeySignatureEvent(%d, sf=%d, %s)',
       self.time_delta,
       self.sharps_flats,

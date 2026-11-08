@@ -24,8 +24,8 @@ Supports all standard MIDI events, tracks, instruments, and file formats.
 }
 
 dependencies = {
-   "lua >= 5.4",
-   "llx",
+   "lua >= 5.1, < 5.6",
+   "llx >= 3.0",
 }
 
 test = {

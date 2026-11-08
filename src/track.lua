@@ -20,6 +20,7 @@
 -- table.insert(t.events, event.NoteEndEvent(480, 0, 60, 0))
 
 local llx = require 'llx'
+local compat = require 'llx.compat'
 local midi_io = require 'lua-midi.io'
 local midi_event = require 'lua-midi.event'
 
@@ -77,7 +78,7 @@ Track = class 'Track' {
     while file:seek() ~= end_of_track do
       assert(
         file:seek() < end_of_track,
-        string.format(
+        compat.format(
           'Read too many bytes for track (got %i, expected %i)',
           file:seek(), end_of_track))
       table.insert(track.events, midi_event.Event.read(file, context))
@@ -131,7 +132,7 @@ Track = class 'Track' {
     for i, event in ipairs(self.events) do
       event_strings[i] = tostring(event)
     end
-    return string.format('Track{events={%s}}',
+    return compat.format('Track{events={%s}}',
                          table.concat(event_strings, ', '))
   end,
 }

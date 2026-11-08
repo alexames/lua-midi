@@ -8,6 +8,10 @@
 -- @license MIT
 
 local llx = require 'llx'
+local compat = require 'llx.compat'
+
+local band, bor = compat.band, compat.bor
+local lshift, rshift = compat.lshift, compat.rshift
 
 -- Set up module environment
 local _ENV, _M = llx.environment.create_module_environment()
@@ -19,10 +23,10 @@ function writeUInt32be(file, i)
   assert(i >= 0 and i <= 0xFFFFFFFF, 'writeUInt32be: value out of range')
   file:write(
     string.char(
-      (i >> 24) & 0xFF,
-      (i >> 16) & 0xFF,
-      (i >> 8) & 0xFF,
-      (i >> 0) & 0xFF))
+      band(rshift(i, 24), 0xFF),
+      band(rshift(i, 16), 0xFF),
+      band(rshift(i, 8), 0xFF),
+      band(i, 0xFF)))
 end
 
 --- Write a 16-bit unsigned integer to a file in big-endian byte order.
@@ -32,8 +36,8 @@ function writeUInt16be(file, i)
   assert(i >= 0 and i <= 0xFFFF, 'writeUInt16be: value out of range')
   file:write(
     string.char(
-      (i >> 8) & 0xFF,
-      (i >> 0) & 0xFF))
+      band(rshift(i, 8), 0xFF),
+      band(i, 0xFF)))
 end
 
 --- Write an 8-bit unsigned integer to a file.
@@ -43,7 +47,7 @@ function writeUInt8be(file, i)
   assert(i >= 0 and i <= 0xFF, 'writeUInt8be: value out of range')
   file:write(
     string.char(
-      (i >> 0) & 0xFF))  -- Single byte
+      band(i, 0xFF)))  -- Single byte
 end
 
 --- Read exactly n bytes from a file, or error on short/EOF read.
@@ -55,7 +59,7 @@ end
 local function _read_bytes(file, n)
   local bytes = file:read(n)
   if not bytes or #bytes ~= n then
-    error(string.format(
+    error(compat.format(
       'Unexpected end of MIDI data (wanted %d bytes, got %d)',
       n, bytes and #bytes or 0), 3)
   end
@@ -68,10 +72,7 @@ end
 -- @raise error on unexpected EOF
 function readUInt32be(file)
   local a, b, c, d = _read_bytes(file, 4):byte(1, 4)
-  return (a << 24)
-       | (b << 16)
-       | (c << 8)
-       | (d << 0)
+  return bor(bor(lshift(a, 24), lshift(b, 16)), bor(lshift(c, 8), d))
 end
 
 --- Read a 16-bit unsigned integer from a file in big-endian byte order.
@@ -80,8 +81,7 @@ end
 -- @raise error on unexpected EOF
 function readUInt16be(file)
   local a, b = _read_bytes(file, 2):byte(1, 2)
-  return (a << 8)
-       | (b << 0)
+  return bor(lshift(a, 8), b)
 end
 
 --- Read an 8-bit unsigned integer from a file.
@@ -98,8 +98,8 @@ end
 -- @param i number The value to write (0 <= i <= 16383)
 function writeUInt14le(file, i)
   assert(i >= 0 and i <= 0x3FFF, 'writeUInt14le: value out of range')
-  writeUInt8be(file, i & 0x7F)
-  writeUInt8be(file, (i >> 7) & 0x7F)
+  writeUInt8be(file, band(i, 0x7F))
+  writeUInt8be(file, band(rshift(i, 7), 0x7F))
 end
 
 --- Read a 14-bit value from two 7-bit bytes, LSB first.
@@ -110,7 +110,7 @@ end
 function readUInt14le(file)
   local lsb = readUInt8be(file)
   local msb = readUInt8be(file)
-  return (msb << 7) | lsb
+  return bor(lshift(msb, 7), lsb)
 end
 
 --- Read a MIDI variable-length quantity (VLQ) from a file.
@@ -123,8 +123,8 @@ function readVLQ(file)
   local value = 0
   repeat
     local byte = readUInt8be(file)
-    value = (value << 7) + (byte & 0x7F)
-  until byte & 0x80 == 0
+    value = lshift(value, 7) + band(byte, 0x7F)
+  until band(byte, 0x80) == 0
   return value
 end
 
@@ -138,16 +138,16 @@ function writeVLQ(file, value)
   -- Each continuation byte carries 7 bits of the value with MSB set.
   -- Uses cascading if (not elseif) so all necessary bytes are written.
   if value > 0x1FFFFF then
-    writeUInt8be(file, ((value >> 21) & 0x7F) | 0x80)
+    writeUInt8be(file, bor(band(rshift(value, 21), 0x7F), 0x80))
   end
   if value > 0x3FFF then
-    writeUInt8be(file, ((value >> 14) & 0x7F) | 0x80)
+    writeUInt8be(file, bor(band(rshift(value, 14), 0x7F), 0x80))
   end
   if value > 0x7F then
-    writeUInt8be(file, ((value >> 7) & 0x7F) | 0x80)
+    writeUInt8be(file, bor(band(rshift(value, 7), 0x7F), 0x80))
   end
   -- Final byte (MSB = 0)
-  writeUInt8be(file, value & 0x7F)
+  writeUInt8be(file, band(value, 0x7F))
 end
 
 --- Create a counting writer that tallies bytes written without storing them.

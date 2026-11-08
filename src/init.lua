@@ -24,13 +24,16 @@
 
 local llx = require 'llx'
 
-local lock <close> = llx.lock_global_table()
-
-return require 'llx.flatten_submodules' {
-  require 'lua-midi.midi_file',
-  require 'lua-midi.track',
-  require 'lua-midi.instrument',
-  require 'lua-midi.percussion',
-  require 'lua-midi.validation',
-  event=require 'lua-midi.event',
-}
+-- The global table stays locked while the submodules load, so an accidental
+-- global assignment in one of them raises; `with` unlocks it even when a
+-- load raises.
+return llx.contextlib.with(llx.lock_global_table(), function()
+  return require 'llx.flatten_submodules' {
+    require 'lua-midi.midi_file',
+    require 'lua-midi.track',
+    require 'lua-midi.instrument',
+    require 'lua-midi.percussion',
+    require 'lua-midi.validation',
+    event=require 'lua-midi.event',
+  }
+end)
