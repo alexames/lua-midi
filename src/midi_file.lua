@@ -27,12 +27,17 @@
 -- new_song:write('output.mid')
 
 local llx = require 'llx'
+local compat = require 'llx.compat'
 local midi_io = require 'lua-midi.io'
 local midi_track = require 'lua-midi.track'
 local validation = require 'lua-midi.validation'
 
 local _ENV, _M = llx.environment.create_module_environment()
 local class = llx.class
+local with = llx.contextlib.with
+
+local band, bor = compat.band, compat.bor
+local lshift, rshift = compat.lshift, compat.rshift
 
 -- SMPTE frame rate lookup tables
 local _frame_rate_to_code = {
@@ -65,11 +70,11 @@ SmpteDivision = class 'SmpteDivision' {
   __init = function(self, frame_rate, ticks_per_frame)
     local frame_rate_code = _frame_rate_to_code[frame_rate]
     if not frame_rate_code then
-      error(string.format('Invalid SMPTE frame rate: %g', frame_rate))
+      error(compat.format('Invalid SMPTE frame rate: %g', frame_rate))
     end
     self.frame_rate = frame_rate
     self.ticks_per_frame = ticks_per_frame
-    self.encoded = -(frame_rate_code << 8 | ticks_per_frame)
+    self.encoded = -bor(lshift(frame_rate_code, 8), ticks_per_frame)
   end,
 
   __eq = function(self, other)
@@ -83,7 +88,7 @@ SmpteDivision = class 'SmpteDivision' {
   end,
 
   __tostring = function(self)
-    return string.format(
+    return compat.format(
       'SMPTE(%g fps, %d tpf)',
       self.frame_rate, self.ticks_per_frame)
   end,
@@ -95,8 +100,8 @@ SmpteDivision = class 'SmpteDivision' {
 -- @local
 local function _decode_smpte(ticks_raw)
   local signed_ticks = ticks_raw - 65536
-  local frame_rate_code = (-signed_ticks) >> 8
-  local ticks_per_frame = (-signed_ticks) & 0xFF
+  local frame_rate_code = rshift(-signed_ticks, 8)
+  local ticks_per_frame = band(-signed_ticks, 0xFF)
   local frame_rate = _code_to_frame_rate[frame_rate_code] or frame_rate_code
   return SmpteDivision(frame_rate, ticks_per_frame)
 end
@@ -197,7 +202,7 @@ MidiFile = class 'MidiFile' {
     elseif self.format == 2 then
       return 'Format 2 (Multi-Track Asynchronous)'
     else
-      return string.format('Unknown Format (%d)', self.format)
+      return compat.format('Unknown Format (%d)', self.format)
     end
   end,
 
@@ -208,7 +213,7 @@ MidiFile = class 'MidiFile' {
   validate_format = function(self)
     -- Validate format number
     if self.format < 0 or self.format > 2 then
-      return false, string.format(
+      return false, compat.format(
         'Invalid format number: %d (must be 0, 1, or 2)',
         self.format)
     end
@@ -218,7 +223,7 @@ MidiFile = class 'MidiFile' {
     -- Format 0: Must have exactly 1 track
     if self.format == 0 then
       if track_count ~= 1 then
-        return false, string.format(
+        return false, compat.format(
           'Format 0 requires exactly 1 track, but has %d track(s)',
           track_count
         )
@@ -277,7 +282,7 @@ MidiFile = class 'MidiFile' {
     local ticks_raw = midi_io.readUInt16be(file)
 
     -- Check if SMPTE format (MSB set)
-    if ticks_raw & 0x8000 ~= 0 then
+    if band(ticks_raw, 0x8000) ~= 0 then
       midi_file.ticks = _decode_smpte(ticks_raw)
     else
       midi_file.ticks = ticks_raw
@@ -301,8 +306,7 @@ MidiFile = class 'MidiFile' {
   -- f:close()
   read = function(file_or_filename)
     if type(file_or_filename) == 'string' then
-      local file <close> = assert(io.open(file_or_filename, 'rb'))
-      return MidiFile._read_file(file)
+      return with(assert(io.open(file_or_filename, 'rb')), MidiFile._read_file)
     else
       return MidiFile._read_file(file_or_filename)
     end
@@ -346,8 +350,9 @@ MidiFile = class 'MidiFile' {
   -- f:close()
   write = function(self, file_or_filename)
     if type(file_or_filename) == 'string' then
-      local file <close> = assert(io.open(file_or_filename, 'wb'))
-      self:_write_file(file)
+      with(assert(io.open(file_or_filename, 'wb')), function(file)
+        self:_write_file(file)
+      end)
     else
       self:_write_file(file_or_filename)
     end
@@ -361,7 +366,7 @@ MidiFile = class 'MidiFile' {
       tracks_strings[i] = tostring(track)
     end
     local ticks_str = tostring(self.ticks)
-    return string.format(
+    return compat.format(
       'MidiFile{format=%d, ticks=%s, tracks={%s}}',
       self.format, ticks_str, table.concat(tracks_strings, ', '))
   end,

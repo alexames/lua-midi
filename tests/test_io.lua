@@ -61,7 +61,7 @@ describe('MidiIoTests', function()
   end)
 
   it('should error on short read for UInt16be', function()
-    local fake_file = { read = function() return '\x00' end }
+    local fake_file = { read = function() return '\0' end }
     local ok, err = pcall(io_util.readUInt16be, fake_file)
     expect(ok).to.be_falsy()
     expect(tostring(err):match('Unexpected end of MIDI data')).to.be_truthy()

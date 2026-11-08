@@ -21,6 +21,7 @@
 -- validation.assert_note(128) -- Error!
 
 local llx = require 'llx'
+local compat = require 'llx.compat'
 
 local _ENV, _M = llx.environment.create_module_environment()
 
@@ -37,10 +38,10 @@ local function _validate_integer_range(value, name, min, max)
     return false, name .. ' must be a number'
   end
   if value ~= math.floor(value) then
-    return false, string.format('%s must be an integer, got %g', name, value)
+    return false, compat.format('%s must be an integer, got %g', name, value)
   end
   if value < min or value > max then
-    return false, string.format(
+    return false, compat.format(
       '%s must be %d-%d, got %d', name, min, max, value)
   end
   return true
@@ -295,15 +296,15 @@ function validate_denominator(denominator)
     return false, 'Denominator must be a number'
   end
   if denominator ~= math.floor(denominator) then
-    return false, string.format(
+    return false, compat.format(
       'Denominator must be an integer, got %g', denominator)
   end
   if denominator < 1 or denominator > 256 then
-    return false, string.format(
+    return false, compat.format(
       'Denominator must be 1-256, got %d', denominator)
   end
-  if denominator & (denominator - 1) ~= 0 then
-    return false, string.format(
+  if compat.band(denominator, denominator - 1) ~= 0 then
+    return false, compat.format(
       'Denominator must be a power of 2, got %d', denominator)
   end
   return true

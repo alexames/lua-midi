@@ -1,6 +1,7 @@
 -- test_meta_events.lua
 -- Unit tests for structured meta event parsing
 
+local compat = require 'llx.compat'
 local unit = require 'llx.unit'
 
 local event = require 'lua-midi.event'
@@ -153,7 +154,7 @@ describe('TimeSignatureEventTests', function()
     -- regularity with set_time_signature.
     local ts = TimeSignatureEvent(0, {4, 2, 24, 8})
     -- 4/4 time (denominator_power=2)
-    expect(math.type(ts.denominator)).to.be_equal_to('integer')
+    expect(compat.math_type(ts.denominator)).to.be_equal_to('integer')
   end)
 
   it('should produce equal events from raw bytes'
@@ -707,7 +708,8 @@ end)
 describe('UnknownMetaEventTests', function()
   it('should read an unknown meta event type without error', function()
     -- Build a binary buffer containing an unknown meta event (type 0x0A)
-    -- Format: delta(0x00), 0xFF, meta_type(0x0A), length(3), data(0x01,0x02,0x03)
+    -- Format: delta(0x00), 0xFF, meta_type(0x0A), length(3),
+    -- data(0x01,0x02,0x03)
     local buffer = {}
     local pos = 0
     local file = {
@@ -756,7 +758,8 @@ describe('UnknownMetaEventTests', function()
     expect(evt.data[3]).to.be_equal_to(0x03)
   end)
 
-  it('should round-trip an unknown meta event through write and read', function()
+  it('should round-trip an unknown meta event through write and read',
+      function()
     -- Build a binary buffer containing an unknown meta event (type 0x0A)
     local buffer = {}
     local pos = 0
